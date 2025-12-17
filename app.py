@@ -4,7 +4,6 @@ import os
 # Importe les fonctions de votre fichier de logique
 from data_processor import load_data, export_colis_par_livreur 
 
-# --- CONFIGURATION INITIALE & ÉTAT DE LA SESSION ---
 
 # Initialiser l'état de la session (pour que la configuration persiste)
 if 'df_colis' not in st.session_state:
@@ -13,9 +12,11 @@ if 'df_colis' not in st.session_state:
 # Configuration initiale du mapping livreurs/secteurs (À PERSONNALISER)
 if 'livreurs_sectors_config' not in st.session_state:
     st.session_state.livreurs_sectors_config = {
-        "Livreur_Michel": ['51100', '51200', '51350'], # EXEMPLE: Modifiez ces codes
-        "Livreur_Julie": ['08000', '08100', '08400'],   # EXEMPLE: Modifiez ces codes
-        # Ajoutez ici les autres chauffeurs/codes avant la première exécution
+        "LAON": ['02000', '02860', '02840', '02820'],
+        "AYTEN": ['02150', '02190'],
+        "REIMS": ['51100'],  
+        "ARDENNES": ['08190', '08360', '08400', '08300', '08310'],
+        "CHALONS": ['51000', '51470', '51510', '51120', ],
     }
 
 
@@ -52,9 +53,7 @@ def display_main_app():
         
         st.markdown("---")
 
-        # ==============================================================================
         # 2. CONFIGURATION DES SECTEURS
-        # ==============================================================================
         
         st.header("2. Configuration des Secteurs et des Livreur")
         
