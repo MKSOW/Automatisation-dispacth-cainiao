@@ -1,137 +1,91 @@
 import streamlit as st
 import pandas as pd
+import folium
+from folium.plugins import Draw
+from streamlit_folium import st_folium
 import os
-# Importe les fonctions de votre fichier de logique
-from data_processor import load_data, export_colis_par_livreur 
+from data_processor import load_data, export_selection_carte, filtrer_colis_par_zone
 
+st.set_page_config(layout="wide", page_title="Logistics Visual Hub")
 
-# Initialiser l'état de la session (pour que la configuration persiste)
-if 'df_colis' not in st.session_state:
-    st.session_state.df_colis = pd.DataFrame()
+st.title("🚀 Logistics Hub : Dispatch Visuel Expert")
 
-# Configuration initiale du mapping livreurs/secteurs (À PERSONNALISER)
-if 'livreurs_sectors_config' not in st.session_state:
-    st.session_state.livreurs_sectors_config = {
-        "LAON": ['02000', '02860', '02840', '02820'],
-        "AYTEN": ['02150', '02190'],
-        "REIMS": ['51100'],  
-        "ARDENNES": ['08190', '08360', '08400', '08300', '08310'],
-        "CHALONS": ['51000', '51470', '51510', '51520', ],
-    }
+# 1. CHARGEMENT
+uploaded_file = st.file_uploader("Étape 1 : Charger le fichier Cainiao", type=['csv', 'xlsx'])
 
-
-def display_main_app():
-    """Affiche l'interface principale de l'application."""
-    
-    st.set_page_config(layout="wide")
-    st.title("📦 Automatisation de la Répartition des Colis")
-    st.markdown("---")
-
-    # 1. CHARGEMENT DU FICHIER SOURCE
-    
-    st.header("1. Charger le Fichier de Prévisions du Jour")
-    
-    uploaded_file = st.file_uploader("Sélectionnez le fichier **CSV** ou **XLSX** du jour :", 
-                                     type=['csv', 'xlsx'])
-    
-    if uploaded_file is not None:
-        with st.spinner(f"Analyse du fichier **{uploaded_file.name}** en cours..."):
-            df_colis, error = load_data(uploaded_file)
-        
-        if error:
-            st.error(f"❌ Erreur de chargement : {error}")
-            st.session_state.df_colis = pd.DataFrame()
-        else:
-            st.session_state.df_colis = df_colis
-            st.success(f"Fichier chargé avec succès ! **{len(df_colis)}** colis prêts à être triés.")
-            
-    # Afficher les données si elles sont chargées
-    if not st.session_state.df_colis.empty:
-        df = st.session_state.df_colis
-        st.subheader(f"Aperçu des Données à Trier ({len(df)} colis)")
-        st.dataframe(df.head(), use_container_width=True)
-        
+if uploaded_file:
+    df, error = load_data(uploaded_file)
+    if error:
+        st.error(error)
+    else:
+        # --- BARRE DE FILTRAGE PAR CODES POSTAUX ---
         st.markdown("---")
-
-        # 2. CONFIGURATION DES SECTEURS
+        st.subheader("🔍 Filtre de précision")
+        codes_input = st.text_input("Saisissez les codes postaux à afficher (séparés par des virgules)", 
+                                    placeholder="Ex: 51100, 08400, 02000")
         
-        st.header("2. Configuration des Secteurs et des Livreur")
+        df_filtered = df.copy()
+        if codes_input:
+            # On nettoie la saisie (enlève les espaces et split par virgule)
+            list_codes = [c.strip() for c in codes_input.split(',') if c.strip()]
+            df_filtered = df[df['Sort Code'].str.contains('|'.join(list_codes), na=False)]
+            st.caption(f"Filtrage actif : {len(df_filtered)} colis correspondent à vos codes.")
+
+        df_map = df_filtered.dropna(subset=['lat', 'lon']).copy()
         
-        # Interface pour ajouter/modifier un livreur
-        with st.expander("Gérer la liste des Livreur et des Codes Postaux"):
-            col1, col2 = st.columns(2)
-            
-            # 2.1 Sélection / Création du Livreur
-            with col1:
-                livreurs_list = list(st.session_state.livreurs_sectors_config.keys())
-                livreurs_list.insert(0, "--- Nouveau Livreur ---")
+        col_map, col_ctrl = st.columns([3, 1])
+
+        with col_map:
+            # Légende
+            st.markdown("""
+            <div style="display: flex; gap: 15px; font-weight: bold;">
+                <span style="color: red;">🔴 08</span> | <span style="color: blue;">🔵 51</span> | 
+                <span style="color: green;">🟢 02</span> | <span style="color: gray;">⚪ Autres</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if not df_map.empty:
+                center_lat = df_map['lat'].mean()
+                center_lon = df_map['lon'].mean()
+                m = folium.Map(location=[center_lat, center_lon], zoom_start=10)
                 
-                selected_driver = st.selectbox("Sélectionnez un Livreur à modifier ou créer :", 
-                                               livreurs_list)
-                
-                initial_name = selected_driver if selected_driver != "--- Nouveau Livreur ---" else ""
-                initial_codes = ", ".join(st.session_state.livreurs_sectors_config.get(selected_driver, []))
-                
-                driver_name_input = st.text_input("Nom du Livreur :", value=initial_name)
-                
-            # 2.2 Saisie des Codes Postaux
-            with col2:
-                codes_input = st.text_area("Codes postaux (séparés par des virgules, ex: 51100, 51350)", 
-                                           value=initial_codes, height=100)
-            
-            col_btn1, col_btn2, col_btn3 = st.columns(3)
+                Draw(export=False, draw_options={
+                    'polyline': False, 'circle': False, 'marker': False, 
+                    'circlemarker': False, 'polygon': True, 'rectangle': True
+                }).add_to(m)
 
-            with col_btn1:
-                if st.button("💾 Ajouter/Mettre à jour le Livreur", use_container_width=True):
-                    if driver_name_input and codes_input:
-                        codes_list = [code.strip() for code in codes_input.split(',') if code.strip()]
-                        st.session_state.livreurs_sectors_config[driver_name_input] = codes_list
-                        st.success(f"Livreur **{driver_name_input}** mis à jour avec {len(codes_list)} codes postaux.")
-                    else:
-                        st.warning("Veuillez remplir le nom et les codes postaux.")
+                for i, row in df_map.iterrows():
+                    cp = str(row['Sort Code'])
+                    dot_color = "red" if cp.startswith('08') or cp.startswith('8') else \
+                                "blue" if cp.startswith('51') else \
+                                "green" if cp.startswith('02') or cp.startswith('2') else "gray"
 
-            with col_btn2:
-                 if st.button("🗑️ Supprimer le Livreur Sélectionné", use_container_width=True):
-                    if selected_driver in st.session_state.livreurs_sectors_config:
-                        del st.session_state.livreurs_sectors_config[selected_driver]
-                        st.success(f"Livreur **{selected_driver}** supprimé.")
-                        st.experimental_rerun()
-                    else:
-                         st.warning("Aucun livreur sélectionné à supprimer.")
+                    folium.CircleMarker(
+                        location=[row['lat'], row['lon']],
+                        radius=4, color=dot_color, fill=True,
+                        popup=f"Ville: {row['Receiver\'s City']}<br>CP: {cp}"
+                    ).add_to(m)
 
-            # Afficher la configuration actuelle
-            st.subheader("Mapping actuel des Livreur/Secteurs")
-            df_mapping = pd.DataFrame(st.session_state.livreurs_sectors_config.items(), columns=["Livreur", "Codes Postaux"])
-            df_mapping['Nb Codes'] = df_mapping['Codes Postaux'].apply(len)
-            st.dataframe(df_mapping.style.background_gradient(cmap='Blues'), hide_index=True, use_container_width=True)
-            
-        st.markdown("---")
-
-        # 3. EXÉCUTION ET EXPORTATION
-        
-        st.header("3. Exécuter le Tri et l'Exportation")
-        
-        default_output_dir = os.path.join(os.path.expanduser('~'), 'Desktop', 'CAINIAO_SORTIES')
-        output_dir = st.text_input("Chemin du Dossier de Sortie", 
-                                   value=default_output_dir)
-
-        if st.button("🚀 Lancer l'Automatisation et Créer les Fichiers !"):
-            if not st.session_state.livreurs_sectors_config:
-                 st.error("Veuillez configurer au moins un livreur et ses codes postaux.")
+                output = st_folium(m, width="100%", height=600, key="map_expert")
             else:
-                with st.spinner("Traitement et exportation en cours..."):
-                    results, output_folder = export_colis_par_livreur(
-                        st.session_state.df_colis, 
-                        st.session_state.livreurs_sectors_config, 
-                        output_dir
-                    )
-                
-                st.success("🎉 Tâche terminée ! Détails de l'exportation :")
-                st.markdown(f"**Dossier de sortie créé :** `{output_folder}`")
-                
-                for result in results:
-                    st.markdown(f"- {result}")
+                st.warning("Aucun colis avec coordonnées GPS trouvé pour ces codes postaux.")
+
+        with col_ctrl:
+            st.subheader("Attribution")
+            last_draw = output['all_drawings'][-1] if output and output.get('all_drawings') else None
             
-# --- LANCEMENT DE L'APPLICATION ---
-if __name__ == "__main__":
-    display_main_app()
+            if last_draw:
+                df_selectionne = filtrer_colis_par_zone(df_map, last_draw)
+                st.metric("📦 Dans la zone", len(df_selectionne))
+                
+                if not df_selectionne.empty:
+                    nom_chauffeur = st.text_input("Nom du chauffeur :", placeholder="Ex: MATHIEU_RETHEL")
+                    if st.button("📥 Exporter la sélection"):
+                        if nom_chauffeur.strip():
+                            path = export_selection_carte(df_selectionne, nom_chauffeur, os.path.join(os.path.expanduser('~'), 'Desktop'))
+                            st.success(f"Fichier créé sur le Bureau")
+                            st.balloons()
+                        else:
+                            st.error("Entrez un nom !")
+            else:
+                st.info("💡 Tracez une zone sur la carte pour isoler des colis.")
