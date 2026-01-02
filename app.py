@@ -4,13 +4,13 @@ import folium
 from folium.plugins import Draw
 from streamlit_folium import st_folium
 import os
-from data_processor import load_data, export_selection_carte, filtrer_colis_par_zone
+from data_processor import load_data, filtrer_colis_par_zone, preparer_telechargement_excel
 
-st.set_page_config(layout="wide", page_title="Logistics Visual Hub")
+st.set_page_config(layout="wide", page_title="Logistics Hub Online")
 
-st.title("🚀 Logistics Hub : Dispatch Visuel Expert")
+st.title("🗺️ Dispatcher Visuel - Cainiao Expert")
 
-# 1. CHARGEMENT
+# 1. CHARGEMENT DU FICHIER
 uploaded_file = st.file_uploader("Étape 1 : Charger le fichier Cainiao", type=['csv', 'xlsx'])
 
 if uploaded_file:
@@ -19,34 +19,30 @@ if uploaded_file:
         st.error(error)
     else:
         # --- BARRE DE FILTRAGE PAR CODES POSTAUX ---
-        st.markdown("---")
-        st.subheader("🔍 Filtre de précision")
+        st.subheader("🔍 Filtre rapide par Codes Postaux")
         codes_input = st.text_input("Saisissez les codes postaux à afficher (séparés par des virgules)", 
-                                    placeholder="Ex: 51100, 08400, 02000")
+                                    placeholder="Ex: 51100, 08400")
         
         df_filtered = df.copy()
         if codes_input:
-            # On nettoie la saisie (enlève les espaces et split par virgule)
             list_codes = [c.strip() for c in codes_input.split(',') if c.strip()]
             df_filtered = df[df['Sort Code'].str.contains('|'.join(list_codes), na=False)]
-            st.caption(f"Filtrage actif : {len(df_filtered)} colis correspondent à vos codes.")
 
         df_map = df_filtered.dropna(subset=['lat', 'lon']).copy()
         
         col_map, col_ctrl = st.columns([3, 1])
 
         with col_map:
-            # Légende
-            st.markdown("""
-            <div style="display: flex; gap: 15px; font-weight: bold;">
-                <span style="color: red;">🔴 08</span> | <span style="color: blue;">🔵 51</span> | 
-                <span style="color: green;">🟢 02</span> | <span style="color: gray;">⚪ Autres</span>
-            </div>
-            """, unsafe_allow_html=True)
-
             if not df_map.empty:
-                center_lat = df_map['lat'].mean()
-                center_lon = df_map['lon'].mean()
+                # Légende
+                st.markdown("""
+                <div style="display: flex; gap: 15px; margin-bottom: 5px; font-weight: bold;">
+                    <span style="color: red;">🔴 08</span> | <span style="color: blue;">🔵 51</span> | 
+                    <span style="color: green;">🟢 02</span> | <span style="color: gray;">⚪ Autres</span>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                center_lat, center_lon = df_map['lat'].mean(), df_map['lon'].mean()
                 m = folium.Map(location=[center_lat, center_lon], zoom_start=10)
                 
                 Draw(export=False, draw_options={
@@ -66,9 +62,9 @@ if uploaded_file:
                         popup=f"Ville: {row['Receiver\'s City']}<br>CP: {cp}"
                     ).add_to(m)
 
-                output = st_folium(m, width="100%", height=600, key="map_expert")
+                output = st_folium(m, width="100%", height=600, key="map_final")
             else:
-                st.warning("Aucun colis avec coordonnées GPS trouvé pour ces codes postaux.")
+                st.warning("Aucun colis trouvé avec ces codes postaux.")
 
         with col_ctrl:
             st.subheader("Attribution")
@@ -76,16 +72,20 @@ if uploaded_file:
             
             if last_draw:
                 df_selectionne = filtrer_colis_par_zone(df_map, last_draw)
-                st.metric("📦 Dans la zone", len(df_selectionne))
+                st.metric("📦 Colis dans la zone", len(df_selectionne))
                 
                 if not df_selectionne.empty:
-                    nom_chauffeur = st.text_input("Nom du chauffeur :", placeholder="Ex: MATHIEU_RETHEL")
-                    if st.button("📥 Exporter la sélection"):
-                        if nom_chauffeur.strip():
-                            path = export_selection_carte(df_selectionne, nom_chauffeur, os.path.join(os.path.expanduser('~'), 'Desktop'))
-                            st.success(f"Fichier créé sur le Bureau")
-                            st.balloons()
-                        else:
-                            st.error("Entrez un nom !")
+                    nom_chauffeur = st.text_input("Nom du fichier exporté :", value="Export_Chauffeur")
+                    
+                    # Génération du fichier Excel en mémoire
+                    excel_data = preparer_telechargement_excel(df_selectionne)
+                    
+                    st.download_button(
+                        label=f"📥 Télécharger pour {nom_chauffeur}",
+                        data=excel_data,
+                        file_name=f"Colis_{nom_chauffeur}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                    st.success("Zone prête !")
             else:
-                st.info("💡 Tracez une zone sur la carte pour isoler des colis.")
+                st.info("💡 Tracez une zone sur la carte (outil à gauche) pour extraire les colis.")

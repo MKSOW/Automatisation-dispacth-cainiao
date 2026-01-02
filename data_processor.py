@@ -1,10 +1,10 @@
 import pandas as pd
-import os
-import datetime
 import io
+import datetime
 from shapely.geometry import shape, Point
 
 def load_data(uploaded_file):
+    """Charge le fichier avec une détection robuste (CSV/Excel)."""
     file_name = uploaded_file.name
     raw_content = uploaded_file.getvalue()
     try:
@@ -29,22 +29,25 @@ def load_data(uploaded_file):
     return df, None
 
 def filtrer_colis_par_zone(df, last_draw):
+    """Vérifie quels points GPS sont dans la zone dessinée."""
     if not last_draw or 'geometry' not in last_draw:
         return pd.DataFrame()
+    
     polygon = shape(last_draw['geometry'])
+    
     def est_dedans(row):
         if pd.isna(row['lat']) or pd.isna(row['lon']): return False
-        point = Point(row['lon'], row['lat'])
+        point = Point(row['lon'], row['lat']) # Longitude, Latitude
         return polygon.contains(point)
+    
     mask = df.apply(est_dedans, axis=1)
     return df[mask]
 
-def export_selection_carte(df_selection, nom_chauffeur, base_dir):
-    date_j = datetime.datetime.now().strftime("%Y-%m-%d")
-    folder = os.path.join(base_dir, f"DISPATCH_VISUEL_{date_j}")
-    os.makedirs(folder, exist_ok=True)
-    nom_propre = "".join(x for x in nom_chauffeur if x.isalnum() or x in "._- ").strip()
-    file_path = os.path.join(folder, f"Colis_{nom_propre}.xlsx")
+def preparer_telechargement_excel(df_selection):
+    """Génère un fichier Excel en mémoire pour le téléchargement Web."""
+    output = io.BytesIO()
+    # On retire les colonnes techniques lat/lon pour l'utilisateur final
     df_export = df_selection.drop(columns=['lat', 'lon'], errors='ignore')
-    df_export.to_excel(file_path, index=False)
-    return file_path
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_export.to_excel(writer, index=False)
+    return output.getvalue()
