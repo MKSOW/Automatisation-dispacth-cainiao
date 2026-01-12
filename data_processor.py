@@ -3,7 +3,6 @@ import io
 from shapely.geometry import shape, Point
 
 def load_data(uploaded_file):
-    """Charge le fichier Cainiao avec détection robuste des colonnes et lignes."""
     try:
         file_name = uploaded_file.name
         raw_content = uploaded_file.getvalue()
@@ -12,15 +11,15 @@ def load_data(uploaded_file):
             df = pd.read_excel(uploaded_file, dtype=str)
         else:
             text = raw_content.decode('utf-8', errors='ignore')
-            # skip_blank_lines=True gère les lignes vides au début
-            df = pd.read_csv(io.StringIO(text), sep=None, engine='python', dtype=str, skip_blank_lines=True)
+            lines = text.splitlines()
+            header_idx = 0
+            # On cherche la ligne qui contient l'entête réelle
+            for i, line in enumerate(lines):
+                if "Tracking No." in line:
+                    header_idx = i
+                    break
+            df = pd.read_csv(io.StringIO("\n".join(lines[header_idx:])), sep=None, engine='python', dtype=str)
 
-        # Nettoyage : Si la première colonne est vide ou bizarre, on cherche la ligne d'entête
-        if "Tracking No." not in df.columns:
-            # On réessaye en cherchant la ligne qui contient "Tracking No."
-            df = pd.read_csv(io.StringIO(text), sep=None, engine='python', dtype=str, skiprows=1)
-
-        # Nettoyage des noms de colonnes (espaces invisibles)
         df.columns = [c.strip() for c in df.columns]
 
         def split_gps(val):
@@ -33,36 +32,24 @@ def load_data(uploaded_file):
         gps_col = "Receiver to (Latitude,Longitude)"
         if gps_col in df.columns:
             coords = df[gps_col].apply(lambda x: pd.Series(split_gps(x)))
-            df['lat'] = coords[0]
-            df['lon'] = coords[1]
+            df['lat'] = pd.to_numeric(coords[0], errors='coerce')
+            df['lon'] = pd.to_numeric(coords[1], errors='coerce')
             return df, None
-        else:
-            return None, f"Colonne GPS '{gps_col}' introuvable."
-            
+        return None, "Colonne GPS introuvable."
     except Exception as e:
-        return None, f"Erreur de lecture : {e}"
+        return None, str(e)
 
 def filtrer_colis_par_zone(df, last_draw):
-    """Filtre les points dans la zone dessinée (Lasso)."""
     if not last_draw or 'geometry' not in last_draw or df.empty:
         return pd.DataFrame()
-    
     polygon = shape(last_draw['geometry'])
-    # On travaille sur une copie sans les valeurs GPS manquantes
-    df_clean = df.dropna(subset=['lat', 'lon']).copy()
-    
-    def est_dedans(row):
-        point = Point(float(row['lon']), float(row['lat']))
-        return polygon.contains(point)
-    
-    mask = df_clean.apply(est_dedans, axis=1)
-    return df_clean[mask]
+    df_valid = df.dropna(subset=['lat', 'lon']).copy()
+    mask = df_valid.apply(lambda r: polygon.contains(Point(float(r['lon']), float(r['lat']))), axis=1)
+    return df_valid[mask]
 
 def preparer_telechargement_excel(df_selection):
-    """Génère le fichier Excel pour le téléchargement."""
-    output = io.BytesIO()
-    # On retire les colonnes lat/lon créées pour le moteur
+    output_bin = io.BytesIO()
     df_export = df_selection.drop(columns=['lat', 'lon'], errors='ignore')
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+    with pd.ExcelWriter(output_bin, engine='openpyxl') as writer:
         df_export.to_excel(writer, index=False)
-    return output.getvalue()
+    return output_bin.getvalue()
