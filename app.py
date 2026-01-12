@@ -11,7 +11,7 @@ st.title("🗺️ Dispatcher Visuel - Cainiao Expert")
 
 uploaded_file = st.file_uploader("Charger le fichier Cainiao", type=['csv', 'xlsx'])
 
-# INITIALISATION DE LA VARIABLE POUR ÉVITER LE NAMEERROR
+# --- CORRECTION CRITIQUE : Initialisation de la variable ---
 output = None 
 
 if uploaded_file:
@@ -43,15 +43,15 @@ if uploaded_file:
                         dot_color = "red" if cp.startswith(('08', '8')) else "blue" if cp.startswith('51') else "green" if cp.startswith(('02', '2')) else "gray"
                         folium.CircleMarker(location=[float(row['lat']), float(row['lon'])], radius=4, color=dot_color, fill=True).add_to(m)
 
-                    # CRÉATION DE LA VARIABLE OUTPUT
+                    # On assigne le résultat de la carte à output
                     output = st_folium(m, width="100%", height=600, key="map_cainiao")
                 else:
-                    st.warning("Aucun colis trouvé.")
+                    st.warning("Aucun colis trouvé pour ces codes postaux.")
 
             with col_ctrl:
                 st.subheader("📦 Attribution")
                 
-                # VÉRIFICATION SÉCURISÉE DE OUTPUT
+                # Vérification si output a été défini et contient des dessins
                 last_draw = None
                 if output and 'all_drawings' in output and output['all_drawings']:
                     last_draw = output['all_drawings'][-1]
@@ -64,6 +64,6 @@ if uploaded_file:
                         data = preparer_telechargement_excel(sel)
                         st.download_button(label=f"📥 Télécharger", data=data, file_name=f"Dispatch_{nom}.xlsx")
                 else:
-                    st.info("Dessinez une zone sur la carte.")
+                    st.info("💡 Tracez une zone sur la carte (outil à gauche) pour commencer.")
         else:
-            st.error("Erreur de colonnes GPS.")
+            st.error("Impossible de lire les colonnes GPS. Vérifiez votre fichier.")
