@@ -10,9 +10,6 @@ from data_processor import (
     preparer_telechargement_excel
 )
 
-# --------------------------------------------------
-# CONFIG
-# --------------------------------------------------
 st.set_page_config(
     page_title="Cainiao Expert Dispatch",
     layout="wide"
@@ -20,15 +17,10 @@ st.set_page_config(
 
 st.title("🗺️ Dispatcher Visuel - Cainiao Expert")
 
-# --------------------------------------------------
-# SESSION STATE INIT (CRITIQUE)
-# --------------------------------------------------
+
 if "map_output" not in st.session_state:
     st.session_state.map_output = None
 
-# --------------------------------------------------
-# UPLOAD
-# --------------------------------------------------
 uploaded_file = st.file_uploader(
     "📂 Charger le fichier Cainiao",
     type=["csv", "xlsx"]
@@ -38,9 +30,6 @@ if not uploaded_file:
     st.info("Veuillez charger un fichier pour commencer.")
     st.stop()
 
-# --------------------------------------------------
-# DATA LOAD
-# --------------------------------------------------
 df, error = load_data(uploaded_file)
 
 if error:
@@ -51,9 +40,6 @@ if "lat" not in df.columns or "lon" not in df.columns:
     st.error("Colonnes GPS absentes ou invalides.")
     st.stop()
 
-# --------------------------------------------------
-# FILTRE CP
-# --------------------------------------------------
 st.subheader("🔍 Filtre par Codes Postaux")
 codes_input = st.text_input("Ex: 51100, 08400")
 
@@ -67,14 +53,9 @@ if codes_input:
 
 df_map = df_filtered.dropna(subset=["lat", "lon"]).copy()
 
-# --------------------------------------------------
-# LAYOUT
-# --------------------------------------------------
+
 col_map, col_ctrl = st.columns([3, 1])
 
-# --------------------------------------------------
-# MAP
-# --------------------------------------------------
 with col_map:
     if df_map.empty:
         st.warning("Aucun colis à afficher.")
@@ -122,17 +103,15 @@ with col_map:
             key="map_cainiao"
         )
 
-# --------------------------------------------------
-# ATTRIBUTION
-# --------------------------------------------------
+
 with col_ctrl:
     st.subheader("📦 Attribution")
 
-    output = st.session_state.map_output
     last_draw = None
+    map_output = st.session_state.get("map_output")
 
-    if output and output.get("all_drawings"):
-        last_draw = output["all_drawings"][-1]
+    if map_output and map_output.get("all_drawings"):
+        last_draw = map_output["all_drawings"][-1]
 
     if not last_draw:
         st.info("✏️ Dessinez une zone sur la carte.")
