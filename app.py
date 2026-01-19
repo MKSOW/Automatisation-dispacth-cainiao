@@ -9,6 +9,10 @@ from data_processor import (
     filtrer_colis_par_zone,
     preparer_telechargement_excel
 )
+from database import init_db
+
+# Initialisation de la base de données
+init_db()
 
 st.set_page_config(
     page_title="Cainiao Expert Dispatch",
