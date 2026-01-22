@@ -6,3 +6,5 @@ pydantic>=2.6
 pydantic-settings>=2.2
 python-dotenv>=1.0
 python-multipart>=0.0.7
+PyJWT>=2.8
+passlib[bcrypt]>=1.7
