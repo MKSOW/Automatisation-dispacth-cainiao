@@ -55,7 +55,7 @@ export default function LoginPage() {
           </h2>
           <p className="mt-4 text-slate-600">
             Centralisez vos opérations de dispatch, tri et livraison sur une
-            plateforme unifiée pensée pour les équipes Cainiao Expert.
+            plateforme unifiée pensée pour les équipes Cainiao Expert et Gofo.
           </p>
         </div>
 
