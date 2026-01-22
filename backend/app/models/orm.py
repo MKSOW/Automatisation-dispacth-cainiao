@@ -41,6 +41,9 @@ class Parcel(Base):
     id = Column(Integer, primary_key=True, index=True)
     tracking_no = Column(String(100), unique=True, nullable=False, index=True)
     source = Column(String(255), nullable=True)
+    address = Column(String(500), nullable=True)  # Adresse de livraison
+    latitude = Column(String(50), nullable=True)   # Coordonnées géocodées
+    longitude = Column(String(50), nullable=True)
     status = Column(
         Enum("pending", "assigned", "sorted", "delivered", name="parcel_status"),
         nullable=False,
