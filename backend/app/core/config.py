@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "Cainiao Dispatch API"
     environment: str = "dev"
     postgres_url: AnyUrl
+    jwt_secret: str = "change-me-in-production"
     default_admin_email: str | None = None
     default_admin_password: str | None = None
 
