@@ -54,7 +54,12 @@ backend/
    - `POST /dispatch/optimize` : optimisation TSP (geopy + OR-Tools)
    - `GET /dispatch/my-route` : tournée du chauffeur connecté
    - `PATCH /dispatch/parcels/{id}/status` : marquer livré
-4. Module Tri (station de scan) — à faire
+4. **Module Tri (Station de Scan)** ✅
+   - `POST /sorting/scan` : scanner un colis → retourne chauffeur + position sac
+   - `GET /sorting/stats` : statistiques du trieur (scans du jour)
+   - `GET /sorting/driver/{id}/bag` : progression du sac d'un chauffeur
+   - `GET /sorting/drivers/progress` : vue globale tous chauffeurs
+   - `GET /sorting/pending` : colis assignés mais pas encore triés
 5. Tests & déploiement — à faire
 
 Ce document servira de référence pendant la migration.
