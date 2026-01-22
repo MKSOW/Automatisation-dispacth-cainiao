@@ -11,3 +11,4 @@ passlib[bcrypt]>=1.7
 email-validator>=2.1
 geopy>=2.4
 ortools>=9.8
+alembic>=1.13
