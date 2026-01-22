@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db_session
 from app.core.security import require_admin
+from app.core.password import hash_password
 from app.models.orm import User
 from app.models.schemas import UserCreate, UserRead, UserUpdate
-from app.services.user_service import hash_password
 
 router = APIRouter(prefix="/users", tags=["users"])
 
