@@ -9,6 +9,7 @@ from data_processor import (
     filtrer_colis_par_zone,
     preparer_telechargement_excel
 )
+from auth import require_login, render_user_sidebar
 from database import init_db
 
 # Initialisation de la base de données
@@ -19,7 +20,11 @@ st.set_page_config(
     layout="wide"
 )
 
+current_user = require_login()
+render_user_sidebar()
+
 st.title("🗺️ Dispatcher Visuel - Cainiao Expert")
+st.caption(f"Connecté : {current_user.username} ({current_user.role})")
 
 # --- Session state ---
 if "map_output" not in st.session_state:

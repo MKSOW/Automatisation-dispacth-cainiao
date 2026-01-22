@@ -3,6 +3,8 @@ import psycopg2
 from sqlalchemy import create_engine, text
 import streamlit as st
 
+from security import hash_password
+
 def get_engine():
     """Récupère l'URL de la base depuis les secrets et crée l'engine SQLAlchemy."""
     try:
@@ -18,10 +20,46 @@ def get_engine():
         st.error(f"Erreur de configuration de la base de données : {e}")
         return None
 
+def _get_secret(key: str, env_key: str) -> str | None:
+    try:
+        return st.secrets[key]
+    except Exception:
+        return os.environ.get(env_key)
+
+
+def _ensure_default_admin(conn):
+    default_email = _get_secret("default_admin_email", "DEFAULT_ADMIN_EMAIL")
+    default_password = _get_secret("default_admin_password", "DEFAULT_ADMIN_PASSWORD")
+
+    if not default_email or not default_password:
+        return
+
+    existing = conn.execute(
+        text("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1")
+    ).scalar()
+    if existing:
+        return
+
+    conn.execute(
+        text(
+            """
+            INSERT INTO users (username, password, role)
+            VALUES (:username, :password, 'admin')
+            """
+        ),
+        {
+            "username": default_email.strip().lower(),
+            "password": hash_password(default_password),
+        },
+    )
+    st.info("Compte admin par défaut créé depuis les secrets.")
+
+
 def init_db():
     """Initialise les tables si elles n'existent pas."""
     engine = get_engine()
-    if not engine: return
+    if not engine:
+        return
     
     with engine.connect() as conn:
         # Table des Utilisateurs
@@ -58,8 +96,9 @@ def init_db():
                 geojson_data JSONB NOT NULL
             );
         """))
-        conn.commit()
-        print("Base de données initialisée avec succès.")
+    _ensure_default_admin(conn)
+    conn.commit()
+    print("Base de données initialisée avec succès.")
 
 # Initialisation au démarrage
 if __name__ == "__main__":

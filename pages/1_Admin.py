@@ -1,18 +1,14 @@
 import streamlit as st
 from sqlalchemy import text
 from database import get_engine
-import hashlib
 
-st.set_page_config(
-    page_title="Administration - Cainiao Expert",
-    layout="wide"
-)
+from auth import render_user_sidebar, require_role
+from security import hash_password
+
+require_role(["admin"])
+render_user_sidebar()
 
 st.title("🔐 Administration - Gestion des Utilisateurs")
-
-def hash_password(password: str) -> str:
-    """Hash le mot de passe avec SHA256."""
-    return hashlib.sha256(password.encode()).hexdigest()
 
 def get_all_users():
     """Récupère tous les utilisateurs de la base."""
@@ -31,6 +27,8 @@ def create_user(username: str, password: str, role: str) -> tuple[bool, str]:
     engine = get_engine()
     if not engine:
         return False, "Erreur de connexion à la base de données"
+
+    username = username.strip().lower()
     
     try:
         with engine.connect() as conn:
@@ -57,6 +55,11 @@ def delete_user(user_id: int) -> tuple[bool, str]:
     
     try:
         with engine.connect() as conn:
+            # Empêcher la suppression d'un administrateur
+            role = conn.execute(text("SELECT role FROM users WHERE id = :id"), {"id": user_id}).scalar()
+            if role == "admin":
+                return False, "Impossible de supprimer un administrateur."
+
             conn.execute(text("DELETE FROM users WHERE id = :id"), {"id": user_id})
             conn.commit()
         return True, "Utilisateur supprimé avec succès !"
@@ -70,7 +73,7 @@ with st.form("create_user_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     
     with col1:
-        new_username = st.text_input("Nom d'utilisateur", placeholder="ex: jean.dupont")
+        new_username = st.text_input("Email professionnel", placeholder="ex: jean.dupont@hub.com")
         new_password = st.text_input("Mot de passe", type="password")
     
     with col2:
@@ -91,7 +94,7 @@ with st.form("create_user_form", clear_on_submit=True):
         elif len(new_password) < 4:
             st.error("Le mot de passe doit contenir au moins 4 caractères.")
         else:
-            success, message = create_user(new_username, new_password, new_role)
+            success, message = create_user(new_username.strip().lower(), new_password, new_role)
             if success:
                 st.success(message)
                 st.rerun()
