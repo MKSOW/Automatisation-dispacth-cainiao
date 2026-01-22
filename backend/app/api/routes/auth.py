@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db_session
+from app.core.jwt import create_access_token
 from app.models.schemas import LoginRequest, LoginResponse
 from app.services.user_service import authenticate_user
 
@@ -18,4 +19,5 @@ def login(payload: LoginRequest, db: Session = Depends(get_db_session)):
             detail="Invalid credentials",
         )
 
-    return LoginResponse(**user)
+    token = create_access_token(user["id"], user["role"])
+    return LoginResponse(access_token=token, **user)
