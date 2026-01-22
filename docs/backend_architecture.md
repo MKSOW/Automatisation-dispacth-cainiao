@@ -46,7 +46,15 @@ backend/
    - Modèles SQLAlchemy (User, Parcel, Zone)
    - CRUD utilisateurs GET/POST/PATCH/DELETE /users (admin)
    - Authentification JWT + middleware de protection
-3. Ajouter modules dispatch/tri/chauffeur
-4. Étendre aux endpoints métier (upload colis, optimisation, scan tri, tournée)
+3. **Module Dispatch** ✅
+   - `POST /dispatch/parcels` : créer un colis
+   - `POST /dispatch/upload` : import en masse
+   - `POST /dispatch/assign` : assigner à un chauffeur
+   - `POST /dispatch/geocode` : géocoder les adresses
+   - `POST /dispatch/optimize` : optimisation TSP (geopy + OR-Tools)
+   - `GET /dispatch/my-route` : tournée du chauffeur connecté
+   - `PATCH /dispatch/parcels/{id}/status` : marquer livré
+4. Module Tri (station de scan) — à faire
+5. Tests & déploiement — à faire
 
 Ce document servira de référence pendant la migration.

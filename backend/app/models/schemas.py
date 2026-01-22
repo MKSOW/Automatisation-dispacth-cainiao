@@ -102,3 +102,32 @@ class OptimizedRoute(BaseModel):
     stops: list[OptimizedStop]
 
 
+# ───────────────────────────────────────
+# Sorting / Scan schemas
+# ───────────────────────────────────────
+class ScanRequest(BaseModel):
+    """Requête de scan d'un colis par le trieur."""
+    tracking_no: str
+
+
+class ScanResponse(BaseModel):
+    """Réponse après scan : info chauffeur + position dans le sac."""
+    success: bool
+    message: str
+    tracking_no: str
+    parcel_id: int | None = None
+    driver_name: str | None = None
+    driver_id: int | None = None
+    bag_position: int | None = None  # sequence_order = position dans le sac
+    zone_name: str | None = None
+    already_sorted: bool = False
+
+
+class SortingStats(BaseModel):
+    """Statistiques de tri pour un trieur."""
+    sorter_id: int
+    total_scanned_today: int
+    last_scan_time: str | None = None
+
+
+
