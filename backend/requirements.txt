@@ -9,3 +9,5 @@ python-multipart>=0.0.7
 PyJWT>=2.8
 passlib[bcrypt]>=1.7
 email-validator>=2.1
+geopy>=2.4
+ortools>=9.8
