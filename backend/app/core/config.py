@@ -1,13 +1,12 @@
 """Application configuration via environment variables."""
 from functools import lru_cache
 from pydantic_settings import BaseSettings
-from pydantic import AnyUrl
 
 
 class Settings(BaseSettings):
     app_name: str = "Cainiao Dispatch API"
     environment: str = "dev"
-    postgres_url: AnyUrl
+    postgres_url: str  # Database connection string
     jwt_secret: str = "change-me-in-production"
     default_admin_email: str | None = None
     default_admin_password: str | None = None
