@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 
@@ -17,7 +17,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(255), unique=True, nullable=False, index=True)
     password = Column(String(255), nullable=False)  # hashed
-    role = Column(Enum("admin", "trieur", "chauffeur", name="user_role"), nullable=False, default="chauffeur")
+    role = Column(String(50), nullable=False, default="chauffeur")  # admin | trieur | chauffeur
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # relationships
@@ -44,11 +44,7 @@ class Parcel(Base):
     address = Column(String(500), nullable=True)  # Adresse de livraison
     latitude = Column(String(50), nullable=True)   # Coordonnées géocodées
     longitude = Column(String(50), nullable=True)
-    status = Column(
-        Enum("pending", "assigned", "sorted", "delivered", name="parcel_status"),
-        nullable=False,
-        default="pending",
-    )
+    status = Column(String(50), nullable=False, default="pending")  # pending | assigned | sorted | delivered
     driver_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     sorter_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     zone_id = Column(Integer, ForeignKey("zones.id"), nullable=True)
