@@ -41,9 +41,12 @@ backend/
 7. `GET /driver/{id}/route` → tournée ordonnée + liens Google Maps
 
 ## Étapes
-1. **Scaffold** minimal (main + /health + /auth/login dummy) ✅ *(à réaliser)*
-2. Intégrer connexion DB + services utilisateurs
-3. Ajouter authentification JWT + middleware
-4. Étendre aux modules dispatch/tri/chauffeur
+1. **Scaffold** minimal (main + /health + /auth/login dummy) ✅
+2. **Intégrer connexion DB + services utilisateurs** ✅
+   - Modèles SQLAlchemy (User, Parcel, Zone)
+   - CRUD utilisateurs GET/POST/PATCH/DELETE /users (admin)
+   - Authentification JWT + middleware de protection
+3. Ajouter modules dispatch/tri/chauffeur
+4. Étendre aux endpoints métier (upload colis, optimisation, scan tri, tournée)
 
 Ce document servira de référence pendant la migration.
