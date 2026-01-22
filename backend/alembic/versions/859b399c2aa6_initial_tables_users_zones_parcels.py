@@ -45,7 +45,10 @@ def upgrade() -> None:
                existing_nullable=True)
     
     # Convert status column to ENUM using raw SQL for PostgreSQL
+    # First drop default, then convert type, then set new default
+    op.execute("ALTER TABLE parcels ALTER COLUMN status DROP DEFAULT")
     op.execute("ALTER TABLE parcels ALTER COLUMN status TYPE parcel_status USING status::parcel_status")
+    op.execute("ALTER TABLE parcels ALTER COLUMN status SET DEFAULT 'pending'::parcel_status")
     op.alter_column('parcels', 'status', nullable=False)
     
     op.drop_constraint('parcels_tracking_no_key', 'parcels', type_='unique')
