@@ -66,11 +66,11 @@ def upgrade() -> None:
                existing_type=sa.TEXT(),
                type_=sa.String(length=255),
                existing_nullable=False)
-    op.alter_column('users', 'role',
-               existing_type=sa.TEXT(),
-               type_=sa.Enum('admin', 'trieur', 'chauffeur', name='user_role'),
-               existing_nullable=False)
-    op.drop_constraint(op.f('users_username_key'), 'users', type_='unique')
+    
+    # Convert role column to ENUM using raw SQL for PostgreSQL
+    op.execute("ALTER TABLE users ALTER COLUMN role TYPE user_role USING role::user_role")
+    
+    op.drop_constraint('users_username_key', 'users', type_='unique')
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.add_column('zones', sa.Column('zone_name', sa.String(length=255), nullable=False))
