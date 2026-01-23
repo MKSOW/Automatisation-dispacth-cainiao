@@ -2,10 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { loginRequest } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { loginRequest, storeToken } from "@/lib/api";
 import classNames from "classnames";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -26,7 +28,19 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const response = await loginRequest(email, password);
+      storeToken(response.access_token);
       setSuccess(`Bienvenue ${response.username}`);
+      
+      // Delai court pour afficher le message de succès puis redirection
+      setTimeout(() => {
+        // Redirection basée sur le rôle peut être ajoutée ici
+        if (response.role === "chauffeur") {
+            router.push("/driver/route");
+        } else {
+            router.push("/dashboard"); 
+        }
+      }, 1000);
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
