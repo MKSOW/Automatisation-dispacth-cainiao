@@ -20,7 +20,7 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [newUser, setNewUser] = useState({ email: "", role: "chauffeur", password: "" });
+  const [newUser, setNewUser] = useState({ username: "", role: "chauffeur", password: "" });
   const [submitting, setSubmitting] = useState(false);
 
   const loadUsers = useCallback(async () => {
@@ -60,20 +60,20 @@ export default function UsersPage() {
   };
 
   const handleAddUser = async () => {
-    if (!newUser.email || !newUser.password) {
-      setError("Email et mot de passe requis");
+    if (!newUser.username || !newUser.password) {
+      setError("Username et mot de passe requis");
       return;
     }
     
     try {
       setSubmitting(true);
       await createUser({
-        username: newUser.email,
+        username: newUser.username,
         password: newUser.password,
         role: newUser.role,
       });
       setShowModal(false);
-      setNewUser({ email: "", role: "chauffeur", password: "" });
+      setNewUser({ username: "", role: "chauffeur", password: "" });
       await loadUsers(); // Refresh list
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création");
