@@ -255,7 +255,7 @@ export default function SorterPage() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-400 uppercase">TODAY'S COUNT</p>
+                  <p className="text-xs text-neutral-400 uppercase">TODAY&apos;S COUNT</p>
                   <p className="text-2xl font-bold">{todayCount}</p>
                 </div>
               </div>
