@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Badge from "@/components/ui/badge";
+import { fetchUsers, fetchParcels, User as ApiUser, Parcel as ApiParcel } from "@/lib/api";
 
 // Types
 interface DashboardStats {
@@ -17,50 +18,56 @@ interface Driver {
   id: number;
   name: string;
   status: "online" | "delivering" | "offline";
-  vehicleId: string;
 }
-
-interface DispatchLog {
-  id: string;
-  destination: string;
-  status: "pending" | "in_transit" | "delivered";
-  assignedTo: string | null;
-  eta: string | null;
-}
-
-// Mock data
-const mockStats: DashboardStats = {
-  totalParcels: 1284,
-  pending: 142,
-  assigned: 890,
-  delivered: 252,
-};
-
-const mockDrivers: Driver[] = [
-  { id: 1, name: "Alex Rivera", status: "online", vehicleId: "TX-9021" },
-  { id: 2, name: "Sarah Chen", status: "delivering", vehicleId: "VN-4401" },
-  { id: 3, name: "Marcus Wright", status: "offline", vehicleId: "TX-1102" },
-  { id: 4, name: "Elena Rodriguez", status: "online", vehicleId: "EB-09" },
-];
-
-const mockDispatchLog: DispatchLog[] = [
-  { id: "#PLX-88210", destination: "Brooklyn, NY • 11201", status: "in_transit", assignedTo: "Sarah Chen", eta: "14:20" },
-  { id: "#PLX-88211", destination: "Queens, NY • 11102", status: "pending", assignedTo: null, eta: null },
-  { id: "#PLX-88212", destination: "Manhattan, NY • 10001", status: "delivered", assignedTo: "Alex Rivera", eta: null },
-];
 
 export default function AdminDashboard() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [stats] = useState<DashboardStats>(mockStats);
-  const [drivers] = useState<Driver[]>(mockDrivers);
-  const [dispatchLog] = useState<DispatchLog[]>(mockDispatchLog);
+  const [stats, setStats] = useState<DashboardStats>({ totalParcels: 0, pending: 0, assigned: 0, delivered: 0 });
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [usersData, parcelsData] = await Promise.all([
+        fetchUsers(),
+        fetchParcels(),
+      ]);
+
+      // Calculate stats from parcels
+      const pending = parcelsData.filter(p => p.status === "pending").length;
+      const assigned = parcelsData.filter(p => p.status === "assigned" || p.status === "in_transit").length;
+      const delivered = parcelsData.filter(p => p.status === "delivered").length;
+
+      setStats({
+        totalParcels: parcelsData.length,
+        pending,
+        assigned,
+        delivered,
+      });
+
+      // Get drivers (users with role chauffeur)
+      const chauffeurs = usersData.filter(u => u.role === "chauffeur");
+      setDrivers(chauffeurs.map(u => ({
+        id: u.id,
+        name: u.username,
+        status: "online" as const, // Default status
+      })));
+    } catch (err) {
+      console.error("Dashboard load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
       router.push("/login");
+    } else if (!isLoading && user) {
+      loadDashboardData();
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, loadDashboardData]);
 
   if (isLoading || !user) {
     return (
@@ -169,12 +176,19 @@ export default function AdminDashboard() {
 
           {/* Driver List */}
           <div className="space-y-3">
-            {drivers.map((driver) => (
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-accent-500 border-t-transparent"></div>
+              </div>
+            ) : drivers.length === 0 ? (
+              <p className="text-center text-neutral-500 py-4">No drivers found</p>
+            ) : (
+            drivers.map((driver) => (
               <div key={driver.id} className="flex items-center justify-between p-3 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <div className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-600 font-medium">
-                      {driver.name.split(" ").map(n => n[0]).join("")}
+                      {driver.name.charAt(0).toUpperCase()}
                     </div>
                     <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
                       driver.status === "online" ? "bg-brand-500" :
@@ -184,7 +198,7 @@ export default function AdminDashboard() {
                   <div>
                     <p className="text-sm font-medium text-neutral-900">{driver.name}</p>
                     <p className="text-xs text-neutral-500">
-                      {driver.vehicleId} • {driver.status === "online" ? "Online" : driver.status === "delivering" ? "Delivering" : "Offline"}
+                      ID #{driver.id} • {driver.status === "online" ? "Online" : driver.status === "delivering" ? "Delivering" : "Offline"}
                     </p>
                   </div>
                 </div>
@@ -192,7 +206,8 @@ export default function AdminDashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
-            ))}
+            ))
+            )}
           </div>
 
           <button className="w-full mt-4 py-2 text-sm text-neutral-500 hover:text-neutral-700 border-t border-neutral-100">
