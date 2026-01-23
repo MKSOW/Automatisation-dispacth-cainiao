@@ -33,13 +33,14 @@ export default function SorterPage() {
   const [shiftGoal] = useState(500);
 
   const loadStats = useCallback(async () => {
+    if (!user) return;
     try {
-      const stats = await getSorterStats();
+      const stats = await getSorterStats(user.id);
       setTodayCount(stats.total_scanned_today);
     } catch {
       // Stats loading failed, use default
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "trieur")) {
