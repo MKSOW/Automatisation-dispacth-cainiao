@@ -182,13 +182,17 @@ export default function UsersPage() {
         </div>
 
         {/* Users Table */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-accent-500 border-t-transparent"></div>
+          </div>
+        ) : (
         <table className="w-full">
           <thead className="bg-neutral-50">
             <tr className="text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               <th className="px-4 py-3">User</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Last Active</th>
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
@@ -198,11 +202,11 @@ export default function UsersPage() {
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-600 font-medium">
-                      {u.name.split(" ").map(n => n[0]).join("")}
+                      {u.username.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-neutral-900">{u.name}</p>
-                      <p className="text-xs text-neutral-500">{u.email}</p>
+                      <p className="text-sm font-medium text-neutral-900">{u.username}</p>
+                      <p className="text-xs text-neutral-500">ID: {u.id}</p>
                     </div>
                   </div>
                 </td>
@@ -213,19 +217,10 @@ export default function UsersPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${
-                      u.status === "active" ? "bg-brand-500" :
-                      u.status === "on_leave" ? "bg-danger-500" : "bg-neutral-400"
-                    }`}></span>
-                    <span className={`text-sm ${
-                      u.status === "active" ? "text-brand-600" :
-                      u.status === "on_leave" ? "text-danger-600" : "text-neutral-500"
-                    }`}>
-                      {u.status === "active" ? "Active" : u.status === "on_leave" ? "On Leave" : "Inactive"}
-                    </span>
+                    <span className="w-2 h-2 rounded-full bg-brand-500"></span>
+                    <span className="text-sm text-brand-600">Active</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm text-neutral-500">{u.lastActive}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <button className="p-1.5 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded">
@@ -233,7 +228,19 @@ export default function UsersPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
                     </button>
-                    <button className="p-1.5 text-neutral-400 hover:text-danger-600 hover:bg-danger-50 rounded">
+                    <button 
+                      onClick={async () => {
+                        if (confirm(`Delete user ${u.username}?`)) {
+                          try {
+                            await deleteUser(u.id);
+                            loadUsers();
+                          } catch {
+                            alert('Failed to delete user');
+                          }
+                        }
+                      }}
+                      className="p-1.5 text-neutral-400 hover:text-danger-600 hover:bg-danger-50 rounded"
+                    >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
@@ -244,6 +251,7 @@ export default function UsersPage() {
             ))}
           </tbody>
         </table>
+        )}
 
         {/* Pagination */}
         <div className="px-4 py-3 border-t border-neutral-100 flex items-center justify-between">
@@ -281,23 +289,13 @@ export default function UsersPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Username</label>
                 <input
                   type="text"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
                   className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500"
-                  placeholder="john@logisticshub.com"
+                  placeholder="johndoe"
                 />
               </div>
               <div>
