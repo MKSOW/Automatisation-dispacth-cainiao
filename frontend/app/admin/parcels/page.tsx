@@ -167,6 +167,13 @@ export default function ParcelsPage() {
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-neutral-200">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-accent-500 border-t-transparent"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12 text-danger-600">{error}</div>
+        ) : (
         <table className="w-full">
           <thead className="bg-neutral-50">
             <tr className="text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
@@ -180,9 +187,7 @@ export default function ParcelsPage() {
               </th>
               <th className="px-4 py-3">Tracking ID</th>
               <th className="px-4 py-3">Recipient</th>
-              <th className="px-4 py-3">Zone</th>
-              <th className="px-4 py-3">Added Date</th>
-              <th className="px-4 py-3">Weight</th>
+              <th className="px-4 py-3">City</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Driver</th>
               <th className="px-4 py-3"></th>
@@ -199,33 +204,26 @@ export default function ParcelsPage() {
                     className="w-4 h-4 rounded border-neutral-300"
                   />
                 </td>
-                <td className="px-4 py-3 text-sm font-medium text-accent-500">{parcel.trackingNo}</td>
+                <td className="px-4 py-3 text-sm font-medium text-accent-500">{parcel.tracking_number}</td>
                 <td className="px-4 py-3">
                   <div>
-                    <p className="text-sm font-medium text-neutral-900">{parcel.recipient}</p>
+                    <p className="text-sm font-medium text-neutral-900">{parcel.recipient_name}</p>
                     <p className="text-xs text-neutral-500">{parcel.address}</p>
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-1 text-xs font-medium bg-neutral-100 text-neutral-700 rounded">
-                    {parcel.zone}
+                    {parcel.city} {parcel.postal_code}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-neutral-600">{parcel.addedDate}</td>
-                <td className="px-4 py-3 text-sm text-neutral-600">{parcel.weight}</td>
                 <td className="px-4 py-3">
                   <Badge variant={statusColors[parcel.status]}>
-                    {parcel.status.toUpperCase()}
+                    {parcel.status.replace("_", " ").toUpperCase()}
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
-                  {parcel.driver ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-neutral-200 rounded-full flex items-center justify-center text-xs">
-                        {parcel.driver.split(" ").map(n => n[0]).join("")}
-                      </div>
-                      <span className="text-sm text-neutral-700">{parcel.driver}</span>
-                    </div>
+                  {parcel.driver_id ? (
+                    <span className="text-sm text-neutral-700">Driver #{parcel.driver_id}</span>
                   ) : (
                     <span className="text-sm text-neutral-400">—</span>
                   )}
@@ -241,6 +239,7 @@ export default function ParcelsPage() {
             ))}
           </tbody>
         </table>
+        )}
 
         {/* Pagination */}
         <div className="px-4 py-3 border-t border-neutral-100 flex items-center justify-between">
