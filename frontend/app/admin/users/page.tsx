@@ -1,65 +1,95 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import Badge from "@/components/ui/badge";
+import { fetchUsers, createUser, deleteUser, User as ApiUser } from "@/lib/api";
 
 interface User {
   id: number;
-  name: string;
-  email: string;
+  username: string;
   role: "chauffeur" | "trieur" | "admin";
-  status: "active" | "on_leave" | "inactive";
-  lastActive: string;
+  status: "active" | "inactive";
 }
-
-// Mock data
-const mockUsers: User[] = [
-  { id: 1, name: "Jean Dupont", email: "j.dupont@logisticshub.com", role: "chauffeur", status: "active", lastActive: "2 mins ago" },
-  { id: 2, name: "Marie Lavoie", email: "m.lavoie@logisticshub.com", role: "trieur", status: "on_leave", lastActive: "1 day ago" },
-  { id: 3, name: "Marc Bernard", email: "m.bernard@logisticshub.com", role: "chauffeur", status: "active", lastActive: "Just now" },
-  { id: 4, name: "Sophie Martin", email: "s.martin@logisticshub.com", role: "admin", status: "active", lastActive: "5 mins ago" },
-  { id: 5, name: "Lucas Petit", email: "l.petit@logisticshub.com", role: "trieur", status: "active", lastActive: "10 mins ago" },
-];
 
 export default function UsersPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "chauffeur", password: "" });
+  const [newUser, setNewUser] = useState({ email: "", role: "chauffeur", password: "" });
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchUsers();
+      setUsers(data.map(u => ({
+        id: u.id,
+        username: u.username,
+        role: u.role as User["role"],
+        status: "active" as const,
+      })));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur de chargement");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
       router.push("/login");
+    } else if (!isLoading && user) {
+      loadUsers();
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, loadUsers]);
 
   const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+    u.username.toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
     total: users.length,
-    chauffeurs: users.filter(u => u.role === "chauffeur" && u.status === "active").length,
-    trieurs: users.filter(u => u.role === "trieur" && u.status === "active").length,
+    chauffeurs: users.filter(u => u.role === "chauffeur").length,
+    trieurs: users.filter(u => u.role === "trieur").length,
   };
 
-  const handleAddUser = () => {
-    const id = Math.max(...users.map(u => u.id)) + 1;
-    setUsers([...users, {
-      id,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role as User["role"],
-      status: "active",
-      lastActive: "Just now"
-    }]);
-    setShowModal(false);
-    setNewUser({ name: "", email: "", role: "chauffeur", password: "" });
+  const handleAddUser = async () => {
+    if (!newUser.email || !newUser.password) {
+      setError("Email et mot de passe requis");
+      return;
+    }
+    
+    try {
+      setSubmitting(true);
+      await createUser({
+        username: newUser.email,
+        password: newUser.password,
+        role: newUser.role,
+      });
+      setShowModal(false);
+      setNewUser({ email: "", role: "chauffeur", password: "" });
+      await loadUsers(); // Refresh list
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la création");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (!confirm("Supprimer cet utilisateur ?")) return;
+    try {
+      await deleteUser(id);
+      await loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la suppression");
+    }
   };
 
   if (isLoading || !user) {
@@ -72,6 +102,14 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 px-4 py-3 rounded-lg flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="text-danger-500 hover:text-danger-700">✕</button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
