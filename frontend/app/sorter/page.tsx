@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import { scanParcel, getSorterStats, ScanResponse, SortingStats } from "@/lib/api";
 
 type ScanState = "ready" | "success" | "error";
 
 interface ScanResult {
   driverName: string;
   position: number;
+  trackingNo: string;
 }
 
 interface ScanError {
@@ -27,14 +29,25 @@ export default function SorterPage() {
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [scanError, setScanError] = useState<ScanError | null>(null);
-  const [todayCount, setTodayCount] = useState(142);
+  const [todayCount, setTodayCount] = useState(0);
   const [shiftGoal] = useState(500);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const stats = await getSorterStats();
+      setTodayCount(stats.total_scanned_today);
+    } catch {
+      // Stats loading failed, use default
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "trieur")) {
       router.push("/login");
+    } else if (!isLoading && user) {
+      loadStats();
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, loadStats]);
 
   useEffect(() => {
     // Auto-focus on input
@@ -46,48 +59,47 @@ export default function SorterPage() {
   const handleScan = async (trackingNo: string) => {
     if (!trackingNo.trim()) return;
 
-    // Simulate API call
-    // In real implementation: POST /sorting/scan with trackingNo
-    
-    // Mock responses
-    const mockResponses: Record<string, { success: boolean; data?: ScanResult; error?: ScanError }> = {
-      "PKG-8829-XLC": { success: true, data: { driverName: "Michael Scott", position: 3 } },
-      "PKG-1234-ABC": { success: true, data: { driverName: "Alex Rivera", position: 7 } },
-      "ALREADY-SORTED": { 
-        success: false, 
-        error: { type: "already_sorted", message: "ALREADY SORTED", details: "This parcel was assigned to Bag DX-105 at 08:42 AM." }
-      },
-    };
-
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    const response = mockResponses[trackingNo] || { 
-      success: true, 
-      data: { driverName: "Driver " + Math.floor(Math.random() * 10), position: Math.floor(Math.random() * 10) + 1 }
-    };
-
-    setLastScanned(trackingNo);
-    setScanInput("");
-
-    if (response.success && response.data) {
-      setScanState("success");
-      setScanResult(response.data);
-      setScanError(null);
-      setTodayCount(prev => prev + 1);
+    try {
+      const response = await scanParcel(trackingNo.trim());
       
-      // Vibration feedback if available
-      if (navigator.vibrate) {
-        navigator.vibrate(100);
+      setLastScanned(trackingNo);
+      setScanInput("");
+
+      if (response.success) {
+        setScanState("success");
+        setScanResult({
+          driverName: response.driver_name || "Unassigned",
+          position: response.bag_position || 0,
+          trackingNo: response.tracking_no,
+        });
+        setScanError(null);
+        setTodayCount(prev => prev + 1);
+        
+        // Vibration feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(100);
+        }
+      } else {
+        setScanState("error");
+        setScanResult(null);
+        setScanError({
+          type: response.already_sorted ? "already_sorted" : "not_found",
+          message: response.already_sorted ? "ALREADY SORTED" : "NOT FOUND",
+          details: response.message,
+        });
+        
+        if (navigator.vibrate) {
+          navigator.vibrate([100, 50, 100]);
+        }
       }
-    } else if (response.error) {
+    } catch (err) {
       setScanState("error");
       setScanResult(null);
-      setScanError(response.error);
-      
-      if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
-      }
+      setScanError({
+        type: "not_found",
+        message: "ERROR",
+        details: err instanceof Error ? err.message : "Scan failed",
+      });
     }
   };
 
