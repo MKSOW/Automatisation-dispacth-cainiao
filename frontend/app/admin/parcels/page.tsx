@@ -181,8 +181,7 @@ export default function ParcelsPage() {
                 />
               </th>
               <th className="px-4 py-3">Tracking ID</th>
-              <th className="px-4 py-3">Recipient</th>
-              <th className="px-4 py-3">City</th>
+              <th className="px-4 py-3">Address / Source</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Driver</th>
               <th className="px-4 py-3"></th>
