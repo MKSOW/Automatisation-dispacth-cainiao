@@ -20,11 +20,20 @@ interface Driver {
   status: "online" | "delivering" | "offline";
 }
 
+interface Parcel {
+  id: number;
+  tracking_no: string;
+  address: string | null;
+  status: string;
+  driver_id: number | null;
+}
+
 export default function AdminDashboard() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({ totalParcels: 0, pending: 0, assigned: 0, delivered: 0 });
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [recentParcels, setRecentParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadDashboardData = useCallback(async () => {
@@ -46,6 +55,15 @@ export default function AdminDashboard() {
         assigned,
         delivered,
       });
+
+      // Get recent parcels (last 5)
+      setRecentParcels(parcelsData.slice(0, 5).map(p => ({
+        id: p.id,
+        tracking_no: p.tracking_no,
+        address: p.address,
+        status: p.status,
+        driver_id: p.driver_id,
+      })));
 
       // Get drivers (users with role chauffeur)
       const chauffeurs = usersData.filter(u => u.role === "chauffeur");
@@ -240,28 +258,25 @@ export default function AdminDashboard() {
           <thead className="bg-neutral-50">
             <tr className="text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               <th className="px-4 py-3">Parcel ID</th>
-              <th className="px-4 py-3">Destination</th>
+              <th className="px-4 py-3">Address</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Assigned To</th>
-              <th className="px-4 py-3">ETA</th>
+              <th className="px-4 py-3">Driver</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {dispatchLog.map((log) => (
-              <tr key={log.id} className="hover:bg-neutral-50">
-                <td className="px-4 py-3 text-sm font-medium text-accent-500">{log.id}</td>
-                <td className="px-4 py-3 text-sm text-neutral-700">{log.destination}</td>
+            {recentParcels.map((parcel) => (
+              <tr key={parcel.id} className="hover:bg-neutral-50">
+                <td className="px-4 py-3 text-sm font-medium text-accent-500">{parcel.tracking_no}</td>
+                <td className="px-4 py-3 text-sm text-neutral-700">{parcel.address || "—"}</td>
                 <td className="px-4 py-3">
                   <Badge variant={
-                    log.status === "in_transit" ? "info" :
-                    log.status === "pending" ? "warning" : "success"
+                    parcel.status === "in_transit" ? "info" :
+                    parcel.status === "pending" ? "warning" : "success"
                   }>
-                    {log.status === "in_transit" ? "IN TRANSIT" :
-                     log.status === "pending" ? "PENDING" : "DELIVERED"}
+                    {parcel.status.replace("_", " ").toUpperCase()}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-sm text-neutral-700">{log.assignedTo || "Unassigned"}</td>
-                <td className="px-4 py-3 text-sm text-neutral-700">{log.eta || "-"}</td>
+                <td className="px-4 py-3 text-sm text-neutral-700">{parcel.driver_id ? `Driver #${parcel.driver_id}` : "Unassigned"}</td>
               </tr>
             ))}
           </tbody>
