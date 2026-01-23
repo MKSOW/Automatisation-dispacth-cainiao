@@ -4,15 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Badge from "@/components/ui/badge";
-import { fetchParcels, createParcel, Parcel as ApiParcel } from "@/lib/api";
+import { fetchParcels, Parcel as ApiParcel } from "@/lib/api";
 
 interface Parcel {
   id: number;
-  tracking_number: string;
-  recipient_name: string;
-  address: string;
-  city: string;
-  postal_code: string;
+  tracking_no: string;
+  source: string | null;
+  address: string | null;
   status: "pending" | "assigned" | "in_transit" | "delivered";
   driver_id: number | null;
 }
@@ -34,12 +32,10 @@ export default function ParcelsPage() {
       const data = await fetchParcels();
       setParcels(data.map(p => ({
         id: p.id,
-        tracking_number: p.tracking_number,
-        recipient_name: p.recipient_name,
+        tracking_no: p.tracking_no,
+        source: p.source,
         address: p.address,
-        city: p.city,
-        postal_code: p.postal_code,
-        status: p.status as Parcel["status"],
+        status: (p.status || "pending") as Parcel["status"],
         driver_id: p.driver_id,
       })));
     } catch (err) {
@@ -58,9 +54,8 @@ export default function ParcelsPage() {
   }, [user, isLoading, router, loadParcels]);
 
   const filteredParcels = parcels.filter(p => {
-    const matchesSearch = p.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
-                         p.recipient_name.toLowerCase().includes(search.toLowerCase()) ||
-                         p.address.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = p.tracking_no.toLowerCase().includes(search.toLowerCase()) ||
+                         (p.address?.toLowerCase().includes(search.toLowerCase()) ?? false);
     const matchesStatus = statusFilter === "all" || p.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -87,10 +82,10 @@ export default function ParcelsPage() {
     );
   }
 
-  const statusColors: Record<Parcel["status"], "warning" | "info" | "default" | "success"> = {
+  const statusColors: Record<string, "warning" | "info" | "success"> = {
     pending: "warning",
     assigned: "info",
-    in_transit: "default",
+    in_transit: "info",
     delivered: "success",
   };
 
@@ -204,20 +199,15 @@ export default function ParcelsPage() {
                     className="w-4 h-4 rounded border-neutral-300"
                   />
                 </td>
-                <td className="px-4 py-3 text-sm font-medium text-accent-500">{parcel.tracking_number}</td>
+                <td className="px-4 py-3 text-sm font-medium text-accent-500">{parcel.tracking_no}</td>
                 <td className="px-4 py-3">
                   <div>
-                    <p className="text-sm font-medium text-neutral-900">{parcel.recipient_name}</p>
-                    <p className="text-xs text-neutral-500">{parcel.address}</p>
+                    <p className="text-sm font-medium text-neutral-900">{parcel.address || "—"}</p>
+                    <p className="text-xs text-neutral-500">{parcel.source || "N/A"}</p>
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="px-2 py-1 text-xs font-medium bg-neutral-100 text-neutral-700 rounded">
-                    {parcel.city} {parcel.postal_code}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant={statusColors[parcel.status]}>
+                  <Badge variant={statusColors[parcel.status] || "warning"}>
                     {parcel.status.replace("_", " ").toUpperCase()}
                   </Badge>
                 </td>
