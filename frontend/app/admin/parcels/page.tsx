@@ -1,54 +1,71 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Badge from "@/components/ui/badge";
+import { fetchParcels, createParcel, Parcel as ApiParcel } from "@/lib/api";
 
 interface Parcel {
-  id: string;
-  trackingNo: string;
-  recipient: string;
+  id: number;
+  tracking_number: string;
+  recipient_name: string;
   address: string;
-  zone: string;
-  addedDate: string;
-  weight: string;
-  status: "pending" | "assigned" | "sorted" | "delivered";
-  driver: string | null;
+  city: string;
+  postal_code: string;
+  status: "pending" | "assigned" | "in_transit" | "delivered";
+  driver_id: number | null;
 }
-
-// Mock data
-const mockParcels: Parcel[] = [
-  { id: "1", trackingNo: "#PL-882104", recipient: "Sarah Jenkins", address: "422 Oak St, Suite 400", zone: "North", addedDate: "Oct 24, 08:30 AM", weight: "1.2 kg", status: "pending", driver: null },
-  { id: "2", trackingNo: "#PL-882105", recipient: "TechSolutions Inc.", address: "101 Innovation Way", zone: "East", addedDate: "Oct 24, 09:15 AM", weight: "15.5 kg", status: "assigned", driver: "Marcus K." },
-  { id: "3", trackingNo: "#PL-882106", recipient: "Benjamin Walters", address: "99 Harbour Quay", zone: "South", addedDate: "Oct 23, 04:45 PM", weight: "0.4 kg", status: "sorted", driver: null },
-  { id: "4", trackingNo: "#PL-882107", recipient: "Diana Prince", address: "700 Skyline Drive", zone: "West", addedDate: "Oct 23, 11:20 AM", weight: "4.8 kg", status: "delivered", driver: "Elena R." },
-  { id: "5", trackingNo: "#PL-882108", recipient: "Wayne Industries", address: "1007 Mountain Drive", zone: "North", addedDate: "Oct 24, 10:00 AM", weight: "22.1 kg", status: "pending", driver: null },
-];
 
 export default function ParcelsPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const [parcels, setParcels] = useState<Parcel[]>(mockParcels);
+  const [parcels, setParcels] = useState<Parcel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedParcels, setSelectedParcels] = useState<string[]>([]);
+  const [selectedParcels, setSelectedParcels] = useState<number[]>([]);
+
+  const loadParcels = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchParcels();
+      setParcels(data.map(p => ({
+        id: p.id,
+        tracking_number: p.tracking_number,
+        recipient_name: p.recipient_name,
+        address: p.address,
+        city: p.city,
+        postal_code: p.postal_code,
+        status: p.status as Parcel["status"],
+        driver_id: p.driver_id,
+      })));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur de chargement");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "admin")) {
       router.push("/login");
+    } else if (!isLoading && user) {
+      loadParcels();
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, loadParcels]);
 
   const filteredParcels = parcels.filter(p => {
-    const matchesSearch = p.trackingNo.toLowerCase().includes(search.toLowerCase()) ||
-                         p.recipient.toLowerCase().includes(search.toLowerCase()) ||
-                         (p.driver?.toLowerCase().includes(search.toLowerCase()) ?? false);
+    const matchesSearch = p.tracking_number.toLowerCase().includes(search.toLowerCase()) ||
+                         p.recipient_name.toLowerCase().includes(search.toLowerCase()) ||
+                         p.address.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || p.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (id: number) => {
     setSelectedParcels(prev =>
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
@@ -73,7 +90,7 @@ export default function ParcelsPage() {
   const statusColors: Record<Parcel["status"], "warning" | "info" | "default" | "success"> = {
     pending: "warning",
     assigned: "info",
-    sorted: "default",
+    in_transit: "default",
     delivered: "success",
   };
 
@@ -125,7 +142,7 @@ export default function ParcelsPage() {
           </div>
           <div className="flex-1"></div>
           <div className="flex items-center gap-2">
-            {(["all", "pending", "assigned", "delivered"] as const).map(status => (
+            {(["all", "pending", "assigned", "in_transit", "delivered"] as const).map(status => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -135,7 +152,7 @@ export default function ParcelsPage() {
                     : "border border-neutral-200 text-neutral-600 hover:bg-neutral-50"
                 }`}
               >
-                {status === "all" ? "All Statuses" : status.charAt(0).toUpperCase() + status.slice(1)}
+                {status === "all" ? "All" : status === "in_transit" ? "In Transit" : status.charAt(0).toUpperCase() + status.slice(1)}
               </button>
             ))}
           </div>
