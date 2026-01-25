@@ -15,6 +15,7 @@ from app.models.schemas import (
     OptimizeRequest,
     OptimizedRoute,
     OptimizedStop,
+    ReorderRouteRequest,
 )
 from app.services.dispatch_service import (
     create_parcel,
@@ -23,6 +24,7 @@ from app.services.dispatch_service import (
     get_driver_parcels,
     geocode_parcels,
     optimize_driver_route,
+    apply_custom_route,
 )
 
 router = APIRouter(prefix="/dispatch", tags=["dispatch"])
@@ -150,7 +152,7 @@ def update_parcel_status(
     return {"message": f"Parcel {parcel_id} status updated to {new_status}"}
 
 
-@router.get("/route/{driver_id}", response_model=List[OptimizedStop])
+@router.get("/route/{driver_id}", response_model=OptimizedRoute)
 def get_driver_route(
     driver_id: int,
     current_user: User = Depends(get_current_user),
@@ -163,4 +165,23 @@ def get_driver_route(
         raise HTTPException(status_code=403, detail="Not your route")
 
     route = optimize_driver_route(db, driver_id)
-    return route.stops
+    return route
+
+
+@router.post("/route/{driver_id}/reorder", response_model=OptimizedRoute)
+def reorder_driver_route(
+    driver_id: int,
+    payload: ReorderRouteRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    """Allow a driver (or admin) to submit a manual ordering of their parcels."""
+    if current_user.role not in ["admin", "chauffeur"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    if current_user.role == "chauffeur" and current_user.id != driver_id:
+        raise HTTPException(status_code=403, detail="Not your route")
+
+    try:
+        return apply_custom_route(db, driver_id, payload.parcel_ids)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
