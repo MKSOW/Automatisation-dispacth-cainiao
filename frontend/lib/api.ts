@@ -235,8 +235,15 @@ export async function optimizeRoute(driverId: number, depotAddress?: string): Pr
   });
 }
 
-export async function getDriverRoute(driverId: number): Promise<OptimizedStop[]> {
-  return apiFetch<OptimizedStop[]>(`/dispatch/route/${driverId}`);
+export async function getDriverRoute(driverId: number): Promise<OptimizedRoute> {
+  return apiFetch<OptimizedRoute>(`/dispatch/route/${driverId}`);
+}
+
+export async function reorderDriverRoute(driverId: number, parcelIds: number[]): Promise<OptimizedRoute> {
+  return apiFetch<OptimizedRoute>(`/dispatch/route/${driverId}/reorder`, {
+    method: "POST",
+    body: JSON.stringify({ parcel_ids: parcelIds }),
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
