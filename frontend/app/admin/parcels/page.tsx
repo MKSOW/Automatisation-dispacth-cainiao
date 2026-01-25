@@ -91,6 +91,42 @@ export default function ParcelsPage() {
     }
   };
 
+  // Create a new parcel
+  const handleCreateParcel = async () => {
+    if (!newParcel.tracking_no.trim() || !newParcel.address?.trim()) {
+      setError("Tracking ID et adresse requis");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await createParcel(newParcel);
+      setShowNewParcelModal(false);
+      setNewParcel({ tracking_no: "", address: "" });
+      await loadParcels();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur création");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Assign selected parcels to a driver
+  const handleAssign = async () => {
+    if (!selectedDriver || selectedParcels.length === 0) return;
+    try {
+      setSubmitting(true);
+      await assignParcelsToDriver(selectedParcels, selectedDriver);
+      setShowAssignModal(false);
+      setSelectedDriver(null);
+      setSelectedParcels([]);
+      await loadParcels();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur assignation");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center h-64">
