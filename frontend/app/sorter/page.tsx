@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { scanParcel, getSorterStats, ScanResponse, SortingStats } from "@/lib/api";
+import { scanParcel, unscanParcel, getSorterStats, ScanResponse, SortingStats } from "@/lib/api";
 
 type ScanState = "ready" | "success" | "error";
 
@@ -31,6 +31,7 @@ export default function SorterPage() {
   const [scanError, setScanError] = useState<ScanError | null>(null);
   const [todayCount, setTodayCount] = useState(0);
   const [shiftGoal] = useState(500);
+  const [undoing, setUndoing] = useState(false);
 
   const loadStats = useCallback(async () => {
     if (!user) return;
@@ -110,6 +111,42 @@ export default function SorterPage() {
     setScanError(null);
     setScanInput("");
     inputRef.current?.focus();
+  };
+
+  const handleUndoScan = async () => {
+    if (!scanResult) return;
+    
+    try {
+      setUndoing(true);
+      const response = await unscanParcel(scanResult.trackingNo);
+      
+      if (response.success) {
+        setTodayCount(prev => Math.max(0, prev - 1));
+        // Vibration feedback
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+        resetToReady();
+      } else {
+        setScanState("error");
+        setScanResult(null);
+        setScanError({
+          type: "not_found",
+          message: "UNDO FAILED",
+          details: response.message,
+        });
+      }
+    } catch (err) {
+      setScanState("error");
+      setScanResult(null);
+      setScanError({
+        type: "not_found",
+        message: "UNDO ERROR",
+        details: err instanceof Error ? err.message : "Could not undo scan",
+      });
+    } finally {
+      setUndoing(false);
+    }
   };
 
   if (isLoading || !user) {
