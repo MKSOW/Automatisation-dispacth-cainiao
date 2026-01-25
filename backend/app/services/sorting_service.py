@@ -29,6 +29,11 @@ def scan_parcel(db: Session, tracking_no: str, sorter_id: int) -> ScanResponse:
         # Get driver info anyway for display
         driver = db.query(User).filter(User.id == parcel.driver_id).first() if parcel.driver_id else None
         zone = db.query(Zone).filter(Zone.id == parcel.zone_id).first() if parcel.zone_id else None
+        bag_position = parcel.sequence_order
+        if bag_position is None and parcel.driver_id:
+            # Fallback: count how many sorted parcels for this driver to give a position
+            count_sorted = db.query(func.count(Parcel.id)).filter(Parcel.driver_id == parcel.driver_id, Parcel.status == "sorted").scalar() or 0
+            bag_position = count_sorted
         
         return ScanResponse(
             success=True,
@@ -37,7 +42,7 @@ def scan_parcel(db: Session, tracking_no: str, sorter_id: int) -> ScanResponse:
             parcel_id=parcel.id,
             driver_name=driver.username if driver else None,
             driver_id=parcel.driver_id,
-            bag_position=parcel.sequence_order,
+            bag_position=bag_position,
             zone_name=zone.zone_name if zone else None,
             already_sorted=True,
         )
@@ -55,6 +60,11 @@ def scan_parcel(db: Session, tracking_no: str, sorter_id: int) -> ScanResponse:
     driver = db.query(User).filter(User.id == parcel.driver_id).first()
     zone = db.query(Zone).filter(Zone.id == parcel.zone_id).first() if parcel.zone_id else None
     
+    # Determine bag position: keep existing route order if set, otherwise append
+    if parcel.sequence_order is None:
+        max_pos = db.query(func.max(Parcel.sequence_order)).filter(Parcel.driver_id == parcel.driver_id).scalar()
+        parcel.sequence_order = (max_pos or 0) + 1
+
     # Update parcel status
     parcel.status = "sorted"
     parcel.sorter_id = sorter_id
@@ -63,7 +73,7 @@ def scan_parcel(db: Session, tracking_no: str, sorter_id: int) -> ScanResponse:
     
     return ScanResponse(
         success=True,
-        message=f"OK → {driver.username if driver else 'Chauffeur inconnu'} | Position {parcel.sequence_order or '?'}",
+    message=f"OK → {driver.username if driver else 'Chauffeur inconnu'} | Position {parcel.sequence_order or '?'}",
         tracking_no=tracking_no,
         parcel_id=parcel.id,
         driver_name=driver.username if driver else None,

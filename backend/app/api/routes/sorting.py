@@ -57,11 +57,30 @@ def my_sorting_stats(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db_session),
 ):
-    """Get current sorter's statistics for today."""
+    """Get current sorter's statistics for today (self)."""
     if current_user.role not in ("trieur", "admin"):
         raise HTTPException(status_code=403, detail="Accès réservé aux trieurs")
     
     return get_sorter_stats(db, current_user.id)
+
+
+@router.get("/stats/{sorter_id}", response_model=SortingStats)
+def sorting_stats_for_user(
+    sorter_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    """Get stats for a specific sorter (used by frontend which passes id)."""
+    if current_user.role not in ("trieur", "admin"):
+        raise HTTPException(status_code=403, detail="Accès réservé aux trieurs")
+    if current_user.role == "trieur" and current_user.id != sorter_id:
+        raise HTTPException(status_code=403, detail="Accès restreint à vos propres statistiques")
+
+    sorter = db.query(User).filter(User.id == sorter_id, User.role == "trieur").first()
+    if not sorter:
+        raise HTTPException(status_code=404, detail="Trieur introuvable")
+
+    return get_sorter_stats(db, sorter_id)
 
 
 @router.get("/driver/{driver_id}/bag")
