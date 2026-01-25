@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Badge from "@/components/ui/badge";
 import Button from "@/components/ui/button";
 import Card from "@/components/ui/card";
-import { getDriverRoute, OptimizedStop } from "@/lib/api";
+import { getDriverRoute, reorderDriverRoute, OptimizedStop, OptimizedRoute } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 export default function DriverRoutePage() {
@@ -14,9 +14,12 @@ export default function DriverRoutePage() {
   const { user, isLoading } = useAuth();
 
   const [stops, setStops] = useState<OptimizedStop[]>([]);
+  const [routeMeta, setRouteMeta] = useState<{ total_distance_km: number; total_duration_min: number | null }>({ total_distance_km: 0, total_duration_min: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [reordering, setReordering] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   const loadRoute = useCallback(async () => {
     if (!user) return;
@@ -24,7 +27,8 @@ export default function DriverRoutePage() {
       setLoading(true);
       setError(null);
       const data = await getDriverRoute(user.id);
-      setStops(data);
+      setStops(data.stops);
+      setRouteMeta({ total_distance_km: data.total_distance_km, total_duration_min: data.total_duration_min });
       setCurrentIndex(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");
@@ -55,6 +59,33 @@ export default function DriverRoutePage() {
   const handleMarkDelivered = () => {
     if (currentIndex < stops.length - 1) {
       setCurrentIndex((prev) => prev + 1);
+    }
+  };
+
+  const moveStop = (idx: number, direction: -1 | 1) => {
+    const newIndex = idx + direction;
+    if (newIndex < 0 || newIndex >= stops.length) return;
+    const copy = [...stops];
+    const [item] = copy.splice(idx, 1);
+    copy.splice(newIndex, 0, item);
+    setStops(copy);
+    setCurrentIndex(0); // reset progression after manual reorder
+  };
+
+  const handleSaveOrder = async () => {
+    if (!user) return;
+    try {
+      setSavingOrder(true);
+      const orderedIds = stops.map((s) => s.parcel_id);
+      const updated = await reorderDriverRoute(user.id, orderedIds);
+      setStops(updated.stops);
+      setRouteMeta({ total_distance_km: updated.total_distance_km, total_duration_min: updated.total_duration_min });
+      setCurrentIndex(0);
+      setReordering(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible d'enregistrer l'ordre");
+    } finally {
+      setSavingOrder(false);
     }
   };
 
@@ -108,6 +139,28 @@ export default function DriverRoutePage() {
           </div>
         ) : (
           <div className="space-y-4">
+            <Card className="p-4 bg-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Résumé tournée</p>
+                  <h2 className="text-lg font-semibold text-neutral-900">{routeMeta.total_distance_km.toFixed(1)} km</h2>
+                  {routeMeta.total_duration_min !== null && (
+                    <p className="text-sm text-neutral-600">~{routeMeta.total_duration_min.toFixed(0)} min estimées</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={() => setReordering((v) => !v)}>
+                    {reordering ? "Annuler" : "Réordonner"}
+                  </Button>
+                  {reordering && (
+                    <Button onClick={handleSaveOrder} disabled={savingOrder}>
+                      {savingOrder ? "Sauvegarde..." : "Enregistrer"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+
             <Card className="p-4 bg-neutral-100">
               <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Progression</p>
               <div className="flex items-end justify-between mt-1">
@@ -152,18 +205,33 @@ export default function DriverRoutePage() {
                   <h3 className="font-semibold text-neutral-900">Prochains arrêts ({upcomingStops.length})</h3>
                 </div>
                 <div className="divide-y divide-neutral-100">
-                  {upcomingStops.map((stop) => (
-                    <div key={stop.parcel_id} className="py-3 flex items-center gap-3">
-                      <div className="w-8 h-8 bg-neutral-100 rounded-full flex items-center justify-center text-sm font-medium text-neutral-600">
-                        {stop.sequence}
+                  {upcomingStops.map((stop, idx) => {
+                    const absoluteIndex = currentIndex + 1 + idx;
+                    return (
+                      <div key={stop.parcel_id} className="py-3 flex items-center gap-3">
+                        <div className="w-8 h-8 bg-neutral-100 rounded-full flex items-center justify-center text-sm font-medium text-neutral-600">
+                          {absoluteIndex + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-neutral-900 truncate">{stop.tracking_no}</p>
+                          <p className="text-xs text-neutral-500 truncate">{stop.address}</p>
+                        </div>
+                        {stop.distance_km !== null && <span className="text-xs text-neutral-500">{stop.distance_km.toFixed(1)} km</span>}
+                        {reordering && (
+                          <div className="flex flex-col gap-1">
+                            <button
+                              onClick={() => moveStop(absoluteIndex, -1)}
+                              className="p-1 rounded bg-neutral-100 hover:bg-neutral-200 text-xs"
+                            >↑</button>
+                            <button
+                              onClick={() => moveStop(absoluteIndex, 1)}
+                              className="p-1 rounded bg-neutral-100 hover:bg-neutral-200 text-xs"
+                            >↓</button>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 truncate">{stop.tracking_no}</p>
-                        <p className="text-xs text-neutral-500 truncate">{stop.address}</p>
-                      </div>
-                      {stop.distance_km !== null && <span className="text-xs text-neutral-500">{stop.distance_km.toFixed(1)} km</span>}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </Card>
             )}
