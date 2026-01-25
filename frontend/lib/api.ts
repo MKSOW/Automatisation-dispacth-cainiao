@@ -248,6 +248,13 @@ export async function scanParcel(trackingNo: string): Promise<ScanResponse> {
   });
 }
 
+export async function unscanParcel(trackingNo: string): Promise<ScanResponse> {
+  return apiFetch<ScanResponse>("/sorting/unscan", {
+    method: "POST",
+    body: JSON.stringify({ tracking_no: trackingNo }),
+  });
+}
+
 export async function getSorterStats(sorterId: number): Promise<SortingStats> {
   return apiFetch<SortingStats>(`/sorting/stats/${sorterId}`);
 }
