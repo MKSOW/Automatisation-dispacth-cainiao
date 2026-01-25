@@ -72,7 +72,7 @@ async def upload_parcel_file(
 
 @router.get("/stats")
 def get_parcel_stats(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_session),
     current_user: User = Depends(require_role(["admin"]))
 ):
     """
@@ -87,7 +87,7 @@ def get_parcel_stats(
 @router.delete("/parcels")
 def clear_all_parcels(
     confirm: bool = Query(False, description="Confirmer la suppression"),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db_session),
     current_user: User = Depends(require_role(["admin"]))
 ):
     """
