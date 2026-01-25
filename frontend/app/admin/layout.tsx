@@ -7,6 +7,7 @@ import classNames from "classnames";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: "grid" },
+  { href: "/admin/upload", label: "Upload Fichiers", icon: "upload" },
   { href: "/admin/users", label: "User Management", icon: "users" },
   { href: "/admin/parcels", label: "Parcels", icon: "package" },
   { href: "/admin/dispatch", label: "Dispatch", icon: "truck" },
@@ -19,6 +20,11 @@ const icons: Record<string, JSX.Element> = {
   grid: (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </svg>
+  ),
+  upload: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
     </svg>
   ),
   users: (
