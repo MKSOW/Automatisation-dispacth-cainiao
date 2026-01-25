@@ -3,13 +3,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { fetchUsers, createUser, deleteUser, User as ApiUser } from "@/lib/api";
+import { fetchUsers, createUser, deleteUser, updateUser, User as ApiUser } from "@/lib/api";
 
 interface User {
   id: number;
   username: string;
   role: "chauffeur" | "trieur" | "admin";
   status: "active" | "inactive";
+}
+
+interface EditingUser {
+  id: number;
+  username: string;
+  role: string;
+  password: string;
 }
 
 export default function UsersPage() {
