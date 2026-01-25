@@ -100,6 +100,52 @@ def get_sorter_stats(db: Session, sorter_id: int) -> SortingStats:
     )
 
 
+def unscan_parcel(db: Session, tracking_no: str, sorter_id: int) -> ScanResponse:
+    """
+    Undo a scan: revert parcel from 'sorted' back to 'assigned'.
+    Only the sorter who scanned it (or an admin) can undo.
+    """
+    parcel = db.query(Parcel).filter(Parcel.tracking_no == tracking_no.strip()).first()
+    
+    if not parcel:
+        return ScanResponse(
+            success=False,
+            message="Colis introuvable",
+            tracking_no=tracking_no,
+        )
+    
+    if parcel.status != "sorted":
+        return ScanResponse(
+            success=False,
+            message="Colis non trié - rien à annuler",
+            tracking_no=tracking_no,
+            parcel_id=parcel.id,
+        )
+    
+    # Check if this sorter scanned it (or let it through for now)
+    if parcel.sorter_id and parcel.sorter_id != sorter_id:
+        return ScanResponse(
+            success=False,
+            message="Vous n'avez pas scanné ce colis",
+            tracking_no=tracking_no,
+            parcel_id=parcel.id,
+        )
+    
+    # Revert to assigned status
+    parcel.status = "assigned"
+    parcel.sorter_id = None
+    parcel.timestamp_sort = None
+    db.commit()
+    
+    return ScanResponse(
+        success=True,
+        message="Scan annulé - colis remis en attente de tri",
+        tracking_no=tracking_no,
+        parcel_id=parcel.id,
+        already_sorted=False,
+    )
+
+
 def get_driver_bag_summary(db: Session, driver_id: int) -> dict:
     """Get summary of parcels in a driver's bag."""
     parcels = db.query(Parcel).filter(
