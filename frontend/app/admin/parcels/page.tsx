@@ -334,9 +334,121 @@ export default function ParcelsPage() {
         </div>
       )}
 
+      {/* New Parcel Modal */}
+      {showNewParcelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-neutral-900">New Parcel</h2>
+              <button onClick={() => setShowNewParcelModal(false)} className="p-1 hover:bg-neutral-100 rounded">
+                <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Tracking ID</label>
+                <input
+                  type="text"
+                  value={newParcel.tracking_no}
+                  onChange={(e) => setNewParcel({ ...newParcel, tracking_no: e.target.value.toUpperCase() })}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  placeholder="PKG-123456"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Address</label>
+                <input
+                  type="text"
+                  value={newParcel.address || ""}
+                  onChange={(e) => setNewParcel({ ...newParcel, address: e.target.value })}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  placeholder="123 Rue Example, Casablanca"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Source (optionnel)</label>
+                <input
+                  type="text"
+                  value={newParcel.source || ""}
+                  onChange={(e) => setNewParcel({ ...newParcel, source: e.target.value })}
+                  className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500"
+                  placeholder="Cainiao"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowNewParcelModal(false)}
+                className="flex-1 px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateParcel}
+                disabled={submitting}
+                className="flex-1 px-4 py-2 bg-accent-500 text-white rounded-lg hover:bg-accent-600 disabled:opacity-50"
+              >
+                {submitting ? "Creating..." : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Modal */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-neutral-900">Assign {selectedParcels.length} parcel(s)</h2>
+              <button onClick={() => setShowAssignModal(false)} className="p-1 hover:bg-neutral-100 rounded">
+                <svg className="w-5 h-5 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Select Driver</label>
+              <select
+                value={selectedDriver ?? ""}
+                onChange={(e) => setSelectedDriver(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500"
+              >
+                <option value="">-- Choose --</option>
+                {drivers.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.username} (#{d.id})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAssignModal(false)}
+                className="flex-1 px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssign}
+                disabled={submitting || !selectedDriver}
+                className="flex-1 px-4 py-2 bg-accent-500 text-white rounded-lg hover:bg-accent-600 disabled:opacity-50"
+              >
+                {submitting ? "Assigning..." : "Assign"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* New Parcel Button */}
       <div className="fixed bottom-6 left-6">
-        <button className="px-5 py-3 bg-accent-500 text-white rounded-xl shadow-lg hover:bg-accent-600 transition-colors flex items-center gap-2 font-medium">
+        <button
+          onClick={() => setShowNewParcelModal(true)}
+          className="px-5 py-3 bg-accent-500 text-white rounded-xl shadow-lg hover:bg-accent-600 transition-colors flex items-center gap-2 font-medium"
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
