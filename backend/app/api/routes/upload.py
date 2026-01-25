@@ -4,7 +4,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_role
+from app.core.security import get_current_user, require_role
 from app.core.database import get_db
 from app.models.orm import User
 from app.services.upload_service import upload_parcels, get_upload_stats
