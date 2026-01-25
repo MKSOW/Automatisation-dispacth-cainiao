@@ -4,7 +4,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Badge from "@/components/ui/badge";
-import { fetchParcels, Parcel as ApiParcel } from "@/lib/api";
+import {
+  fetchParcels,
+  fetchUsers,
+  createParcel,
+  assignParcelsToDriver,
+  Parcel as ApiParcel,
+  User as ApiUser,
+  ParcelCreate,
+} from "@/lib/api";
 
 interface Parcel {
   id: number;
@@ -19,11 +27,19 @@ export default function ParcelsPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [parcels, setParcels] = useState<Parcel[]>([]);
+  const [drivers, setDrivers] = useState<ApiUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedParcels, setSelectedParcels] = useState<number[]>([]);
+
+  // Modal states
+  const [showNewParcelModal, setShowNewParcelModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [newParcel, setNewParcel] = useState<ParcelCreate>({ tracking_no: "", address: "" });
+  const [selectedDriver, setSelectedDriver] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const loadParcels = useCallback(async () => {
     try {
