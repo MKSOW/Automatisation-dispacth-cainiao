@@ -56,6 +56,7 @@ export interface OptimizedStop {
   google_maps_url: string;
   waze_url: string;
 }
+  duration_min: number | null;
 
 export interface OptimizedRoute {
   driver_id: number;
@@ -63,18 +64,26 @@ export interface OptimizedRoute {
   stops: OptimizedStop[];
 }
 
+  total_duration_min: number | null;
 export interface ScanResponse {
   success: boolean;
   message: string;
-  tracking_no: string;
+export async function optimizeRoute(driverId: number, depotAddress?: string): Promise<OptimizedRoute> {
   parcel_id: number | null;
   driver_name: string | null;
   driver_id: number | null;
   bag_position: number | null;
   zone_name: string | null;
   already_sorted: boolean;
+export async function getDriverRoute(driverId: number): Promise<OptimizedRoute> {
+  return apiFetch<OptimizedRoute>(`/dispatch/route/${driverId}`);
 }
 
+export async function reorderDriverRoute(driverId: number, parcelIds: number[]): Promise<OptimizedRoute> {
+  return apiFetch<OptimizedRoute>(`/dispatch/route/${driverId}/reorder`, {
+    method: "POST",
+    body: JSON.stringify({ parcel_ids: parcelIds }),
+  });
 export interface SortingStats {
   sorter_id: number;
   total_scanned_today: number;
