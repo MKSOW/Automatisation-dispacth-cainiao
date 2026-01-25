@@ -45,8 +45,8 @@ export default function ParcelsPage() {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchParcels();
-      setParcels(data.map(p => ({
+      const [parcelData, usersData] = await Promise.all([fetchParcels(), fetchUsers()]);
+      setParcels(parcelData.map(p => ({
         id: p.id,
         tracking_no: p.tracking_no,
         source: p.source,
@@ -54,6 +54,7 @@ export default function ParcelsPage() {
         status: (p.status || "pending") as Parcel["status"],
         driver_id: p.driver_id,
       })));
+      setDrivers(usersData.filter(u => u.role === "chauffeur"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de chargement");
     } finally {
