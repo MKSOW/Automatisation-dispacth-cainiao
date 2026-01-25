@@ -12,6 +12,7 @@ from app.services.sorting_service import (
     scan_parcel,
     get_sorter_stats,
     get_driver_bag_summary,
+    unscan_parcel,
 )
 
 router = APIRouter(prefix="/sorting", tags=["sorting"])
@@ -33,6 +34,22 @@ def scan_barcode(
         raise HTTPException(status_code=403, detail="Accès réservé aux trieurs")
     
     return scan_parcel(db, payload.tracking_no, current_user.id)
+
+
+@router.post("/unscan", response_model=ScanResponse)
+def unscan_barcode(
+    payload: ScanRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    """
+    Undo a parcel scan - revert from 'sorted' back to 'assigned'.
+    Only the sorter who scanned it can undo.
+    """
+    if current_user.role not in ("trieur", "admin"):
+        raise HTTPException(status_code=403, detail="Accès réservé aux trieurs")
+    
+    return unscan_parcel(db, payload.tracking_no, current_user.id)
 
 
 @router.get("/stats", response_model=SortingStats)
