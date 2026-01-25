@@ -171,7 +171,7 @@ export default function AdminDashboard() {
           icon="map"
           variant="info"
         />
-        {routeTotals.duration !== null && (
+        {typeof routeTotals.duration === "number" && (
           <KPICard
             title="Durée estimée"
             value={`${routeTotals.duration.toFixed(0)} min`}
@@ -235,6 +235,8 @@ export default function AdminDashboard() {
             ) : (
             drivers.map((driver) => {
               const route = driverRoutes[driver.id];
+              const distanceKm = typeof route?.total_distance_km === "number" ? route.total_distance_km : null;
+              const durationMin = typeof route?.total_duration_min === "number" ? route.total_duration_min : null;
               return (
                 <div key={driver.id} className="flex items-center justify-between p-3 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
                   <div className="flex items-center gap-3">
@@ -254,7 +256,9 @@ export default function AdminDashboard() {
                       </p>
                       {route && (
                         <p className="text-xs text-neutral-500">
-                          {route.total_distance_km.toFixed(1)} km • {route.total_duration_min !== null ? `${route.total_duration_min.toFixed(0)} min` : "ETA n/a"}
+                          {distanceKm !== null ? `${distanceKm.toFixed(1)} km` : "Distance n/a"}
+                          {" • "}
+                          {durationMin !== null ? `${durationMin.toFixed(0)} min` : "ETA n/a"}
                         </p>
                       )}
                     </div>
@@ -346,7 +350,7 @@ function KPICard({
   highlighted = false 
 }: { 
   title: string; 
-  value: number; 
+  value: number | string; 
   change: number;
   icon: string;
   variant?: "default" | "success" | "warning" | "info";
@@ -357,6 +361,7 @@ function KPICard({
     clock: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />,
     "user-check": <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />,
     "check-circle": <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />,
+    map: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5-2.5V4l5 2.5L15 4l5 2.5v13l-5-2.5L9 20zM9 6v14m6-16v14" />,
   };
 
   const variantColors = {
@@ -375,7 +380,7 @@ function KPICard({
         </svg>
       </div>
       <div className="flex items-end justify-between">
-        <span className="text-3xl font-bold text-neutral-900">{value.toLocaleString()}</span>
+        <span className="text-3xl font-bold text-neutral-900">{typeof value === "number" ? value.toLocaleString() : value}</span>
         <span className={`text-sm font-medium ${change >= 0 ? "text-brand-500" : "text-danger-500"}`}>
           {change >= 0 ? "+" : ""}{change}%
           <svg className={`w-3 h-3 inline ml-0.5 ${change >= 0 ? "" : "rotate-180"}`} fill="currentColor" viewBox="0 0 20 20">
