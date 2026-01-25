@@ -269,11 +269,15 @@ export default function SorterPage() {
 
             {/* Action Buttons */}
             <div className="flex gap-3 w-full max-w-sm mb-6">
-              <button className="flex-1 py-3 bg-neutral-800 border border-neutral-700 rounded-xl flex items-center justify-center gap-2 text-sm hover:bg-neutral-700">
+              <button 
+                onClick={handleUndoScan}
+                disabled={undoing}
+                className="flex-1 py-3 bg-neutral-800 border border-neutral-700 rounded-xl flex items-center justify-center gap-2 text-sm hover:bg-neutral-700 disabled:opacity-50"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                 </svg>
-                UNDO SCAN
+                {undoing ? "ANNULATION..." : "UNDO SCAN"}
               </button>
               <button className="flex-1 py-3 bg-neutral-800 border border-neutral-700 rounded-xl flex items-center justify-center gap-2 text-sm hover:bg-neutral-700">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
