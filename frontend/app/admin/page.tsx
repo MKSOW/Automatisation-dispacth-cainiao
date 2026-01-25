@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Badge from "@/components/ui/badge";
 import { fetchUsers, fetchParcels, User as ApiUser, Parcel as ApiParcel } from "@/lib/api";
 
@@ -34,7 +35,11 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({ totalParcels: 0, pending: 0, assigned: 0, delivered: 0 });
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [recentParcels, setRecentParcels] = useState<Parcel[]>([]);
+  const [parcels, setParcels] = useState<(ApiParcel & { driver_name?: string | null })[]>([]);
+  const [satellite, setSatellite] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const LiveFleetMap = dynamic(() => import("@/components/live-fleet-map"), { ssr: false });
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -71,6 +76,13 @@ export default function AdminDashboard() {
         id: u.id,
         name: u.username,
         status: "online" as const, // Default status
+      })));
+
+      // Prepare parcels with coordinates and driver names for the map
+      const driverById = new Map(chauffeurs.map(u => [u.id, u.username]));
+      setParcels(parcelsData.map(p => ({
+        ...p,
+        driver_name: p.driver_id ? driverById.get(p.driver_id) ?? null : null,
       })));
     } catch (err) {
       console.error("Dashboard load error:", err);
@@ -142,40 +154,19 @@ export default function AdminDashboard() {
                 </svg>
                 Filter Zones
               </button>
-              <button className="px-3 py-1.5 text-sm border border-neutral-200 rounded-lg hover:bg-neutral-50 flex items-center gap-2">
+              <button
+                onClick={() => setSatellite((s) => !s)}
+                className="px-3 py-1.5 text-sm border border-neutral-200 rounded-lg hover:bg-neutral-50 flex items-center gap-2"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
-                Satellite
+                {satellite ? "Standard" : "Satellite"}
               </button>
             </div>
           </div>
 
-          {/* Map Placeholder */}
-          <div className="bg-neutral-100 rounded-xl h-80 flex items-center justify-center border border-neutral-200 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent-50 to-brand-50 opacity-50"></div>
-            <div className="relative z-10 text-center">
-              <svg className="w-16 h-16 mx-auto text-neutral-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-              <p className="text-neutral-500">Map integration coming soon</p>
-              <p className="text-sm text-neutral-400">Leaflet / Google Maps</p>
-            </div>
-            
-            {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-white rounded-lg px-3 py-2 shadow-sm">
-              <div className="flex items-center gap-4 text-xs">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-accent-500"></span>
-                  HIGH PRIORITY
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-brand-500"></span>
-                  STANDARD DELIVERY
-                </span>
-              </div>
-            </div>
-          </div>
+          <LiveFleetMap parcels={parcels} satellite={satellite} />
         </div>
 
         {/* Active Drivers */}
