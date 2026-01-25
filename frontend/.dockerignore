@@ -1,0 +1,15 @@
+# Deps
+node_modules
+.next
+out
+dist
+npm-debug.log*
+
+# Git / misc
+.git
+.gitignore
+README.md
+
+# Caches
+.turbo
+.vercel

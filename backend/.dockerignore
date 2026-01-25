@@ -1,0 +1,20 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+.env
+.env.*
+
+# Git / misc
+.git
+.gitignore
+README.md
+
+# Alembic migrations pycache
+alembic/__pycache__
+alembic/versions/__pycache__
+
+# IDE
+.vscode
+.idea
