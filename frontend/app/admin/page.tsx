@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Badge from "@/components/ui/badge";
-import { fetchUsers, fetchParcels, User as ApiUser, Parcel as ApiParcel } from "@/lib/api";
+import { fetchUsers, fetchParcels, getDriverRoute, User as ApiUser, Parcel as ApiParcel, OptimizedRoute } from "@/lib/api";
 
 // Types
 interface DashboardStats {
@@ -36,6 +36,8 @@ export default function AdminDashboard() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [recentParcels, setRecentParcels] = useState<Parcel[]>([]);
   const [parcels, setParcels] = useState<(ApiParcel & { driver_name?: string | null })[]>([]);
+  const [driverRoutes, setDriverRoutes] = useState<Record<number, OptimizedRoute>>({});
+  const [routeTotals, setRouteTotals] = useState<{ distance: number; duration: number | null }>({ distance: 0, duration: null });
   const [satellite, setSatellite] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -77,6 +79,29 @@ export default function AdminDashboard() {
         name: u.username,
         status: "online" as const, // Default status
       })));
+
+      // Fetch per-driver routes to compute KPI distance/ETA
+      const routes = await Promise.all(chauffeurs.map(async (d) => {
+        try {
+          return await getDriverRoute(d.id);
+        } catch {
+          return null;
+        }
+      }));
+      const routeMap: Record<number, OptimizedRoute> = {};
+      let totalDist = 0;
+      let totalDur: number | null = null;
+      routes.forEach((r, idx) => {
+        if (!r) return;
+        const driverId = chauffeurs[idx].id;
+        routeMap[driverId] = r;
+        totalDist += r.total_distance_km || 0;
+        if (r.total_duration_min !== null) {
+          totalDur = (totalDur ?? 0) + r.total_duration_min;
+        }
+      });
+      setDriverRoutes(routeMap);
+      setRouteTotals({ distance: totalDist, duration: totalDur });
 
       // Prepare parcels with coordinates and driver names for the map
       const driverById = new Map(chauffeurs.map(u => [u.id, u.username]));
@@ -139,6 +164,22 @@ export default function AdminDashboard() {
           icon="check-circle"
           variant="success"
         />
+        <KPICard
+          title="Distance tournées"
+          value={`${routeTotals.distance.toFixed(1)} km`}
+          change={0}
+          icon="map"
+          variant="info"
+        />
+        {routeTotals.duration !== null && (
+          <KPICard
+            title="Durée estimée"
+            value={`${routeTotals.duration.toFixed(0)} min`}
+            change={0}
+            icon="clock"
+            variant="info"
+          />
+        )}
       </div>
 
       {/* Main Content Grid */}
@@ -192,30 +233,38 @@ export default function AdminDashboard() {
             ) : drivers.length === 0 ? (
               <p className="text-center text-neutral-500 py-4">No drivers found</p>
             ) : (
-            drivers.map((driver) => (
-              <div key={driver.id} className="flex items-center justify-between p-3 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-600 font-medium">
-                      {driver.name.charAt(0).toUpperCase()}
+            drivers.map((driver) => {
+              const route = driverRoutes[driver.id];
+              return (
+                <div key={driver.id} className="flex items-center justify-between p-3 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-600 font-medium">
+                        {driver.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                        driver.status === "online" ? "bg-brand-500" :
+                        driver.status === "delivering" ? "bg-accent-500" : "bg-neutral-400"
+                      }`}></span>
                     </div>
-                    <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                      driver.status === "online" ? "bg-brand-500" :
-                      driver.status === "delivering" ? "bg-accent-500" : "bg-neutral-400"
-                    }`}></span>
+                    <div>
+                      <p className="text-sm font-medium text-neutral-900">{driver.name}</p>
+                      <p className="text-xs text-neutral-500">
+                        ID #{driver.id} • {driver.status === "online" ? "Online" : driver.status === "delivering" ? "Delivering" : "Offline"}
+                      </p>
+                      {route && (
+                        <p className="text-xs text-neutral-500">
+                          {route.total_distance_km.toFixed(1)} km • {route.total_duration_min !== null ? `${route.total_duration_min.toFixed(0)} min` : "ETA n/a"}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">{driver.name}</p>
-                    <p className="text-xs text-neutral-500">
-                      ID #{driver.id} • {driver.status === "online" ? "Online" : driver.status === "delivering" ? "Delivering" : "Offline"}
-                    </p>
-                  </div>
+                  <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
-                <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            ))
+              );
+            })
             )}
           </div>
 
