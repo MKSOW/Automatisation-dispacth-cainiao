@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, auth, users, dispatch, sorting
+from app.api.routes import health, auth, users, dispatch, sorting, upload
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -21,6 +21,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(dispatch.router)
 app.include_router(sorting.router)
+app.include_router(upload.router)
 
 
 @app.get("/", tags=["root"])
