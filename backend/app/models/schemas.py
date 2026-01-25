@@ -91,6 +91,7 @@ class OptimizedStop(BaseModel):
     address: str
     sequence: int
     distance_km: float | None = None
+    duration_min: float | None = None
     google_maps_url: str
     waze_url: str
 
@@ -99,7 +100,13 @@ class OptimizedRoute(BaseModel):
     """Résultat de l'optimisation TSP."""
     driver_id: int
     total_distance_km: float
+    total_duration_min: float | None = None
     stops: list[OptimizedStop]
+
+
+class ReorderRouteRequest(BaseModel):
+    """Réordonner manuellement la tournée d'un chauffeur."""
+    parcel_ids: list[int]
 
 
 # ───────────────────────────────────────

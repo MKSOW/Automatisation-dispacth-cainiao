@@ -184,8 +184,11 @@ def solve_tsp(distance_matrix: list[list[float]]) -> list[int]:
     return list(range(n))
 
 
+AVERAGE_SPEED_KMH = 35  # configurable estimate for ETA calculations
+
+
 def optimize_driver_route(db: Session, driver_id: int, depot_address: str = "Casablanca, Maroc") -> OptimizedRoute:
-    """Optimize the delivery route for a driver using TSP."""
+    """Optimize the delivery route for a driver using TSP and compute distance/ETA."""
     # Get assigned/sorted parcels
     parcels = db.query(Parcel).filter(
         Parcel.driver_id == driver_id,
@@ -195,7 +198,7 @@ def optimize_driver_route(db: Session, driver_id: int, depot_address: str = "Cas
     ).all()
     
     if not parcels:
-        return OptimizedRoute(driver_id=driver_id, total_distance_km=0, stops=[])
+        return OptimizedRoute(driver_id=driver_id, total_distance_km=0, total_duration_min=None, stops=[])
     
     # Geocode depot
     depot_coords = geocode_address(depot_address)
@@ -213,6 +216,7 @@ def optimize_driver_route(db: Session, driver_id: int, depot_address: str = "Cas
     
     # Build result
     total_distance = 0.0
+    total_duration_min: float = 0.0
     stops = []
     prev_idx = 0  # Start at depot
     
@@ -223,6 +227,9 @@ def optimize_driver_route(db: Session, driver_id: int, depot_address: str = "Cas
         parcel = parcels[idx - 1]  # -1 because depot is index 0
         dist = distance_matrix[prev_idx][idx]
         total_distance += dist
+        leg_duration = (dist / AVERAGE_SPEED_KMH) * 60 if dist is not None else None
+        if leg_duration is not None:
+            total_duration_min += leg_duration
         
         # Update sequence in DB
         parcel.sequence_order = seq
@@ -237,6 +244,7 @@ def optimize_driver_route(db: Session, driver_id: int, depot_address: str = "Cas
             address=parcel.address or "",
             sequence=seq,
             distance_km=round(dist, 2),
+            duration_min=round(leg_duration, 1) if leg_duration is not None else None,
             google_maps_url=f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}",
             waze_url=f"https://waze.com/ul?ll={lat},{lon}&navigate=yes",
         ))
@@ -248,5 +256,67 @@ def optimize_driver_route(db: Session, driver_id: int, depot_address: str = "Cas
     return OptimizedRoute(
         driver_id=driver_id,
         total_distance_km=round(total_distance, 2),
+        total_duration_min=round(total_duration_min, 1) if total_duration_min else None,
+        stops=stops,
+    )
+
+
+def apply_custom_route(db: Session, driver_id: int, parcel_ids: list[int], depot_address: str = "Casablanca, Maroc") -> OptimizedRoute:
+    """Apply a manual ordering of parcels for a driver and recompute metrics."""
+    parcels = db.query(Parcel).filter(
+        Parcel.driver_id == driver_id,
+        Parcel.status.in_(["assigned", "sorted"]),
+        Parcel.latitude.isnot(None),
+        Parcel.longitude.isnot(None),
+    ).all()
+
+    existing_ids = {p.id for p in parcels}
+    if set(parcel_ids) != existing_ids:
+        raise ValueError("La liste des colis ne correspond pas à ceux du chauffeur")
+
+    depot_coords = geocode_address(depot_address) or (33.5731, -7.5898)
+
+    parcel_by_id = {p.id: p for p in parcels}
+    coords: list[tuple[float, float]] = [depot_coords] + [(float(parcel_by_id[pid].latitude), float(parcel_by_id[pid].longitude)) for pid in parcel_ids]
+    distance_matrix = build_distance_matrix(coords)
+
+    total_distance = 0.0
+    total_duration_min = 0.0
+    stops: list[OptimizedStop] = []
+    prev_idx = 0  # depot index
+
+    for seq, pid in enumerate(parcel_ids, start=1):
+        parcel = parcel_by_id[pid]
+        current_idx = seq  # because coords includes depot + ordered parcels
+        dist = distance_matrix[prev_idx][current_idx]
+        leg_duration = (dist / AVERAGE_SPEED_KMH) * 60 if dist is not None else None
+
+        if dist is not None:
+            total_distance += dist
+        if leg_duration is not None:
+            total_duration_min += leg_duration
+
+        parcel.sequence_order = seq
+
+        lat, lon = parcel.latitude, parcel.longitude
+        stops.append(OptimizedStop(
+            parcel_id=parcel.id,
+            tracking_no=parcel.tracking_no,
+            address=parcel.address or "",
+            sequence=seq,
+            distance_km=round(dist, 2) if dist is not None else None,
+            duration_min=round(leg_duration, 1) if leg_duration is not None else None,
+            google_maps_url=f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}",
+            waze_url=f"https://waze.com/ul?ll={lat},{lon}&navigate=yes",
+        ))
+
+        prev_idx = current_idx
+
+    db.commit()
+
+    return OptimizedRoute(
+        driver_id=driver_id,
+        total_distance_km=round(total_distance, 2),
+        total_duration_min=round(total_duration_min, 1) if total_duration_min else None,
         stops=stops,
     )
