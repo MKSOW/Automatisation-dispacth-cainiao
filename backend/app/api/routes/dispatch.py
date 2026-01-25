@@ -14,6 +14,7 @@ from app.models.schemas import (
     DispatchAssign,
     OptimizeRequest,
     OptimizedRoute,
+    OptimizedStop,
 )
 from app.services.dispatch_service import (
     create_parcel,
@@ -147,3 +148,19 @@ def update_parcel_status(
     parcel.status = new_status
     db.commit()
     return {"message": f"Parcel {parcel_id} status updated to {new_status}"}
+
+
+@router.get("/route/{driver_id}", response_model=List[OptimizedStop])
+def get_driver_route(
+    driver_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session),
+):
+    """Return optimized stops for a driver. Drivers can only fetch their own route; admins can fetch any."""
+    if current_user.role not in ["admin", "chauffeur"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    if current_user.role == "chauffeur" and current_user.id != driver_id:
+        raise HTTPException(status_code=403, detail="Not your route")
+
+    route = optimize_driver_route(db, driver_id)
+    return route.stops

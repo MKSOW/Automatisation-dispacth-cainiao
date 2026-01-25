@@ -1,1 +1,24 @@
 secrets.*
+
+# Env files (root + subfolders like backend/, frontend/)
+.env
+.env.*
+*/.env
+*/.env.*
+
+# Frontend
+node_modules/
+frontend/.next/
+frontend/.turbo/
+frontend/.vercel/
+frontend/dist/
+frontend/out/
+
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+
+# OS / editor
+.DS_Store
+*.log
