@@ -101,6 +101,37 @@ export default function UsersPage() {
     }
   };
 
+  const handleEditUser = (u: User) => {
+    setEditingUser({
+      id: u.id,
+      username: u.username,
+      role: u.role,
+      password: "",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    try {
+      setSubmitting(true);
+      const updates: { role?: string; password?: string } = {
+        role: editingUser.role,
+      };
+      if (editingUser.password) {
+        updates.password = editingUser.password;
+      }
+      await updateUser(editingUser.id, updates);
+      setShowEditModal(false);
+      setEditingUser(null);
+      await loadUsers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la modification");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center h-64">
