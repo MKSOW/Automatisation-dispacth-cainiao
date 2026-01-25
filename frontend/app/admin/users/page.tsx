@@ -27,6 +27,8 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<EditingUser | null>(null);
   const [newUser, setNewUser] = useState({ username: "", role: "chauffeur", password: "" });
   const [submitting, setSubmitting] = useState(false);
 
