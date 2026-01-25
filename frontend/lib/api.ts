@@ -272,3 +272,63 @@ export async function getDriverBagSummary(): Promise<DriverBagSummary[]> {
   return apiFetch<DriverBagSummary[]>("/sorting/bags");
 }
 
+// ─────────────────────────────────────────────────────────────
+// Upload API (GOFO / CAINIAO Excel files)
+// ─────────────────────────────────────────────────────────────
+
+export interface UploadResult {
+  message: string;
+  file_type: string;
+  filename: string;
+  total_rows: number;
+  inserted: number;
+  duplicates: number;
+  errors: string[] | null;
+}
+
+export interface UploadStats {
+  total_parcels: number;
+  gofo_count: number;
+  cainiao_count: number;
+  pending: number;
+  assigned: number;
+}
+
+export async function uploadParcelFile(
+  file: File,
+  fileType: "gofo" | "cainiao"
+): Promise<UploadResult> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${API_BASE_URL}/upload/parcels?file_type=${fileType}`,
+    {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail?.detail?.message || detail?.detail || `Erreur ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getUploadStats(): Promise<UploadStats> {
+  return apiFetch<UploadStats>("/upload/stats");
+}
+
+export async function clearAllParcels(): Promise<{ message: string; deleted_count: number }> {
+  return apiFetch<{ message: string; deleted_count: number }>(
+    "/upload/parcels?confirm=true",
+    { method: "DELETE" }
+  );
+}
+
