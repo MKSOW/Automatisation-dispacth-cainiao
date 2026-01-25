@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:16-alpine
@@ -24,10 +22,10 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://cainiao:cainiao@db:5432/cainiao
-      SECRET_KEY: changeme_in_production
+      POSTGRES_URL: postgresql://cainiao:cainiao@db:5432/cainiao
+      JWT_SECRET: changeme_in_production
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -38,9 +36,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: http://localhost:8001
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       - backend
 
