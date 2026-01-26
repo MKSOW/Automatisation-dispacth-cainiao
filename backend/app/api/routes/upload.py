@@ -17,7 +17,7 @@ async def upload_parcel_file(
     file: UploadFile = File(...),
     file_type: Literal['gofo', 'cainiao'] = Query(..., description="Type de fichier: 'gofo' ou 'cainiao'"),
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(require_role(["admin"]))
+    current_user: User = Depends(require_role("admin"))
 ):
     """
     Upload un fichier Excel contenant des colis.
@@ -73,7 +73,7 @@ async def upload_parcel_file(
 @router.get("/stats")
 def get_parcel_stats(
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(require_role(["admin"]))
+    current_user: User = Depends(require_role("admin"))
 ):
     """
     Obtenir les statistiques des colis uploadés.
@@ -88,7 +88,7 @@ def get_parcel_stats(
 def clear_all_parcels(
     confirm: bool = Query(False, description="Confirmer la suppression"),
     db: Session = Depends(get_db_session),
-    current_user: User = Depends(require_role(["admin"]))
+    current_user: User = Depends(require_role("admin"))
 ):
     """
     Supprimer tous les colis de la base de données.

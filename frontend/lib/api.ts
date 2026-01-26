@@ -56,6 +56,8 @@ export interface OptimizedStop {
   duration_min: number | null;
   google_maps_url: string;
   waze_url: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface OptimizedRoute {

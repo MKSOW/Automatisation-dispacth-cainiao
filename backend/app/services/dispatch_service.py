@@ -247,6 +247,8 @@ def optimize_driver_route(db: Session, driver_id: int, depot_address: str = "Cas
             duration_min=round(leg_duration, 1) if leg_duration is not None else None,
             google_maps_url=f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}",
             waze_url=f"https://waze.com/ul?ll={lat},{lon}&navigate=yes",
+            latitude=float(lat) if lat is not None else None,
+            longitude=float(lon) if lon is not None else None,
         ))
         
         prev_idx = idx
@@ -308,6 +310,8 @@ def apply_custom_route(db: Session, driver_id: int, parcel_ids: list[int], depot
             duration_min=round(leg_duration, 1) if leg_duration is not None else None,
             google_maps_url=f"https://www.google.com/maps/dir/?api=1&destination={lat},{lon}",
             waze_url=f"https://waze.com/ul?ll={lat},{lon}&navigate=yes",
+            latitude=float(lat) if lat is not None else None,
+            longitude=float(lon) if lon is not None else None,
         ))
 
         prev_idx = current_idx

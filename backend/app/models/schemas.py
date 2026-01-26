@@ -94,6 +94,8 @@ class OptimizedStop(BaseModel):
     duration_min: float | None = None
     google_maps_url: str
     waze_url: str
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class OptimizedRoute(BaseModel):
