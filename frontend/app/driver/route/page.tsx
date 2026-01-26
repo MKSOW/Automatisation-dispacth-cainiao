@@ -115,24 +115,23 @@ const StopDetailsView = ({ stop, onBack, onComplete, onNavigate }: { stop: Optim
     
     {/* Buttons Container */}
     <div className="bg-white p-4 border-t border-neutral-100 pb-8 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] space-y-3 z-10">
-        <div className="grid grid-cols-2 gap-3">
-             <Button onClick={() => window.open(stop.google_maps_url, "_blank")} className="w-full bg-white text-neutral-900 border border-neutral-200 hover:bg-neutral-50 py-4 rounded-xl font-bold shadow-sm">
-                <div className="flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                    Google Maps
-                </div>
-            </Button>
-             <Button onClick={() => window.open(stop.waze_url, "_blank")} className="w-full bg-white text-neutral-900 border border-neutral-200 hover:bg-neutral-50 py-4 rounded-xl font-bold shadow-sm">
-                <div className="flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-sky-400"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg> <span className="text-sm">Waze</span>
-                </div>
-            </Button>
-        </div>
+        <Button onClick={() => window.open(stop.google_maps_url, "_blank")} className="w-full bg-[#10C35B] hover:bg-green-600 text-white py-4 rounded-xl font-bold shadow-sm border-none">
+            <div className="flex items-center justify-center gap-2">
+                Ouvrir Google Maps
+            </div>
+        </Button>
+        <Button onClick={() => window.open(stop.waze_url, "_blank")} className="w-full bg-[#3B82F6] hover:bg-blue-600 text-white py-4 rounded-xl font-bold shadow-sm border-none">
+            <div className="flex items-center justify-center gap-2">
+                Ouvrir Waze
+            </div>
+        </Button>
         
-        <Button onClick={onComplete} className="w-full bg-brand-500 text-white hover:bg-brand-600 py-6 rounded-xl font-bold text-lg shadow-lg shadow-brand-200 border-none">
+        <div className="h-2"/>
+
+        <Button onClick={onComplete} className="w-full bg-[#10C35B] text-white hover:bg-green-600 py-6 rounded-xl font-bold text-lg shadow-lg shadow-green-200 border-none">
             <div className="flex items-center gap-3">
                <CheckIcon />
-               Mark as Delivered
+               Marquer comme livré
             </div>
         </Button>
     </div>
@@ -315,14 +314,20 @@ export default function DriverRoutePage() {
                                    <span className="text-xs text-brand-600 font-medium">{currentStop.distance_km?.toFixed(1)} km</span>
                               </div>
                            </div>
-                           <div className="grid grid-cols-[1fr_auto] gap-3">
-                              <Button size="lg" onClick={() => handleOpenNavigation('google', currentStop)} className="bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-200">
-                                <div className="flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                                    Start Navigation
+                           <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                              <Button onClick={() => window.open(currentStop.google_maps_url, "_blank")} className="bg-white hover:bg-neutral-50 text-neutral-900 border border-neutral-200 font-bold rounded-xl shadow-sm">
+                                <div className="flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    <span className="text-xs">Maps</span>
                                 </div>
                               </Button>
-                              <Button size="lg" variant="secondary" onClick={() => setSelectedStop(currentStop)} className="bg-neutral-100 text-neutral-900 rounded-xl w-14 flex items-center justify-center">
+                              <Button onClick={() => window.open(currentStop.waze_url, "_blank")} className="bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-brand-200 border-none">
+                                <div className="flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                                    <span className="text-xs">Waze</span>
+                                </div>
+                              </Button>
+                              <Button variant="secondary" onClick={() => setSelectedStop(currentStop)} className="bg-neutral-100 text-neutral-900 rounded-xl w-14 flex items-center justify-center">
                                 <ListIcon />
                               </Button>
                            </div>
@@ -335,78 +340,102 @@ export default function DriverRoutePage() {
                 
                 {/* Overall Progress */}
                 <Card className="p-5 border-none shadow-sm bg-white">
+                     {/* Summary Card mimicking screenshot */}
+                    <div className="mb-6 bg-white rounded-xl">
+                        <div className="flex justify-between items-start mb-1">
+                            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">RÉSUMÉ TOURNÉE</h3>
+                            <button onClick={() => setReordering(!reordering)} className="text-blue-500 font-bold text-sm">
+                                Réordonner
+                            </button>
+                        </div>
+                        <div className="flex items-end gap-2 mb-1">
+                           <span className="text-2xl font-bold text-neutral-900">{routeMeta.total_distance_km.toFixed(1)} km</span>
+                        </div>
+                        <p className="text-neutral-500 text-sm">~{routeMeta.total_duration_min || 0} min estimées</p>
+                    </div>
+
                     <div className="flex justify-between items-end mb-2">
                         <div>
-                            <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Overall Progress</p>
+                            <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">PROGRESSION</p>
                             <div className="flex items-baseline gap-2">
-                                <h2 className="text-2xl font-bold text-neutral-900">Stop {currentIndex + 1} <span className="text-base text-neutral-400 font-normal">of {stops.length}</span></h2>
+                                <h2 className="text-2xl font-bold text-neutral-900">Arrêt {currentIndex + 1} sur {stops.length}</h2>
                             </div>
                         </div>
-                        <span className="text-brand-500 font-bold">{progressPercent}% Done</span>
+                        <span className="text-[#10C35B] font-bold">{progressPercent}% terminé</span>
                     </div>
                     <div className="h-3 bg-neutral-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${progressPercent}%` }} />
+                        <div className="h-full bg-[#10C35B] rounded-full transition-all duration-1000 ease-out" style={{ width: `${progressPercent}%` }} />
                     </div>
                 </Card>
 
                 {/* Current Stop Hero Card */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-lg text-neutral-900">Current Stop</h3>
-                        <span className="bg-brand-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">Priority</span>
+                        <h3 className="font-bold text-xs text-[#10C35B] uppercase tracking-wider">ARRÊT ACTUEL</h3>
+                        {/* <span className="bg-brand-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">Priority</span> */}
                     </div>
                     
                     {currentStop ? (
                         <div 
-                           className="bg-white rounded-2xl p-1 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-neutral-100 cursor-pointer transition-transform active:scale-[0.99]"
+                           className="bg-white rounded-2xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-neutral-100 cursor-pointer transition-transform active:scale-[0.99]"
                            onClick={() => setSelectedStop(currentStop)}
                         >
-                            <div className="p-5 pb-2 border-b border-neutral-50">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <span className="bg-brand-500 text-white font-bold text-xs px-2 py-1 rounded">STOP {currentStop.sequence}</span>
-                                    <span className="text-xs font-medium text-brand-600 uppercase tracking-wider">3 Parcels</span>
+                            <div className="pb-4">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h2 className="text-lg font-bold text-neutral-900 leading-snug break-all pr-2">
+                                        {currentStop.tracking_no}
+                                    </h2>
+                                    <span className="bg-green-100 text-green-700 font-bold text-[10px] px-2 py-1 rounded border border-green-200 whitespace-nowrap">SEQUENCE {currentStop.sequence}</span>
                                 </div>
-                                <h2 className="text-xl font-bold text-neutral-900 leading-snug mb-4">
-                                    {currentStop.address}
-                                </h2>
                                 
-                                <div className="h-32 bg-neutral-100 rounded-xl w-full overflow-hidden relative mb-4">
-                                     <img src="https://assets.website-files.com/63a9fb837ebb681a30424597/63a9fb837ebb688173424606_Map.jpg" className="w-full h-full object-cover opacity-80 mix-blend-multiply" alt="Map Preview" />
-                                     <div className="absolute inset-0 flex items-center justify-center">
-                                         <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg transform -translate-y-1">
-                                             <div className="w-3 h-3 bg-brand-500 rounded-full" />
-                                         </div>
-                                     </div>
+                                <p className="text-neutral-600 text-sm mb-2 max-w-[80%]">
+                                    {currentStop.address}
+                                </p>
+                                
+                                <div className="flex justify-end mb-4">
+                                    <span className="bg-neutral-100 text-neutral-600 text-xs font-bold px-3 py-1 rounded-full">
+                                        {currentStop.distance_km?.toFixed(1)} KM
+                                    </span>
                                 </div>
                             </div>
-                            <div className="p-3 flex gap-2">
+                            
+                            <div className="space-y-2">
                                 <Button 
-                                    className="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-bold py-6 rounded-xl shadow-lg shadow-brand-100 border-none text-base"
+                                    className="w-full bg-[#10C35B] hover:bg-green-600 text-white font-bold py-3 rounded-full shadow-sm border-none text-sm"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        handleOpenNavigation('google', currentStop);
+                                        window.open(currentStop.google_maps_url, "_blank");
                                     }}
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                                        START NAVIGATION
-                                    </div>
+                                    Ouvrir Google Maps
                                 </Button>
-                                <Button variant="secondary" className="w-14 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl" onClick={(e) => { e.stopPropagation(); /* Call */ }}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                <Button 
+                                    className="w-full bg-[#3B82F6] hover:bg-blue-600 text-white font-bold py-3 rounded-full shadow-sm border-none text-sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(currentStop.waze_url, "_blank");
+                                    }}
+                                >
+                                    Ouvrir Waze
+                                </Button>
+                                <Button 
+                                    className="w-full bg-[#10C35B] hover:bg-green-600 text-white font-bold py-3 rounded-full shadow-sm border-none text-sm"
+                                    onClick={(e) => { e.stopPropagation(); handleMarkDelivered(); }}
+                                >
+                                    Marquer comme livré
                                 </Button>
                             </div>
                         </div>
                     ) : (
                         <div className="bg-white p-8 rounded-2xl text-center border-2 border-dashed border-neutral-200">
-                             <p className="text-neutral-400 font-medium">All stops completed!</p>
+                             <p className="text-neutral-400 font-medium">Tous les arrêts terminés !</p>
                         </div>
                     )}
                 </div>
 
                 {/* UPCOMING QUEUE */}
                 <div>
-                     <h3 className="font-bold text-lg text-neutral-900 mb-4">Upcoming Queue</h3>
+                     <h3 className="font-bold text-lg text-neutral-900 mb-4">Prochains arrêts ({upcomingStops.length})</h3>
                      <div className="space-y-3">
                          {upcomingStops.map((stop, i) => {
                              const idx = currentIndex + 1 + i + 1; // +1 for curr, +1 for 1-based
