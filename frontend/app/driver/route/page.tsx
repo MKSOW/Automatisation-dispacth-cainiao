@@ -469,18 +469,3 @@ export default function DriverRoutePage() {
     </div>
   );
 }
-
-                 
-                 {reordering && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-                        <Button onClick={handleSaveOrder} disabled={savingOrder} className="shadow-xl">
-                            {savingOrder ? "Saving..." : "Save Route Order"}
-                        </Button>
-                    </div>
-                 )}
-            </div>
-        )}
-      </main>
-    </div>
-  );
-}
