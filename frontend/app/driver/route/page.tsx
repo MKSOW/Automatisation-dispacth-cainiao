@@ -23,6 +23,10 @@ const ListIcon = () => (
 const NavIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
 );
+const CheckIcon = () => (
+   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+);
+
 const StopDetailsView = ({ stop, onBack, onComplete, onNavigate }: { stop: OptimizedStop; onBack: () => void; onComplete: () => void; onNavigate: () => void }) => (
   <div className="flex flex-col h-full bg-neutral-50">
     {/* Header */}
